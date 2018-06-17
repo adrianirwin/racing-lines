@@ -1,0 +1,28 @@
+{
+	"name": "analyzer",
+	"version": "0.0.1",
+	"description": "",
+	"private": true,
+	"author": "Adrian Irwin",
+	"license": "MIT",
+	"dependencies": {
+		"aframe": "^0.8.2",
+		"geodetic-to-ecef": "^1.2.0",
+		"hard-source-webpack-plugin": "^0.7.5",
+		"jquery": "^3.3.1",
+		"lodash": "^4.17.10",
+		"papaparse": "^4.5.0"
+	},
+	"devDependencies": {
+		"css-loader": "^0.28.11",
+		"node-sass": "^4.9.0",
+		"sass-loader": "^7.0.3",
+		"style-loader": "^0.21.0",
+		"webpack": "^4.12.0",
+		"webpack-cli": "^3.0.3"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"build": "webpack"
+	}
+}

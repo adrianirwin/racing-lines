@@ -1,0 +1,29 @@
+body {
+	font-family: monospace;
+	font-size: 10px;
+}
+
+.uploader {
+	box-sizing: border-box;
+	position: fixed;
+	z-index: 1;
+	right: 130px; bottom: 20px; left: 20px;
+	height: 100px;
+	padding: 10px;
+	border: 1px solid rgba(0, 0, 0, 0.2);
+	background: rgba(0, 0, 0, 0.5);
+	color: rgb(255, 255, 255);
+	box-shadow: inset 10px 15px 40px rgba(0, 0, 0, 0.2);
+
+	input[name="log_file"] {
+		width: 100%;
+	}
+}
+
+p {
+	margin: 0px 0px 10px;
+}
+
+a-scene {
+	z-index: 0;
+}
