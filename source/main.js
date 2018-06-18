@@ -25,7 +25,7 @@ function data_input($input, callback) {
 		const fileReader = new FileReader();
 		fileReader.onload = function () {
 			//	This is pretty heinous
-			callback(parser.from_csv(window.atob(fileReader.result.substr(13)).replace(/"/g, '')).data);
+			callback(parser.from_csv(window.atob(fileReader.result.split(',')[1]).replace(/"/g, '')).data);
 		};
 		fileReader.readAsDataURL($input.prop('files')[0]);
 	});
