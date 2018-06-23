@@ -1,0 +1,4 @@
+{
+	"shell_cmd": "make",
+	"npm_run_build": "npm_run_build"
+}
