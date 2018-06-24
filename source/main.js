@@ -12,8 +12,8 @@ function start_aframe(callback) {
 	$('a-scene').on('loaded', callback);
 }
 
-function start_web() {
-	window.console.log('start_web');
+function start_web_ui() {
+	window.console.log('start_web_ui');
 
 	data_input($('input[name="log_file"]'), data_loaded);
 }
@@ -48,8 +48,10 @@ function data_loaded(data) {
 	const cartesian_coords =		parser.cartesian(gps_coords);
 	const recentered_coords =		parser.recenter(cartesian_coords, vector_to_center[0], vector_to_center[1], vector_to_center[2]);
 
-	//	Assign coordinates
-	racing_line.setAttribute('racing_line', 'coords: ' + parser.to_string(recentered_coords));
+	//	Parse the lap boundaries
+	const lap_boundaries =			parser.laps(data);
+	const lap_offset_vector =		new THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2]).normalize();
+	window.console.log(lap_boundaries);
 
 	//	Three significant vectors
 	//	 - to the center of the track bounds in earth space
@@ -58,6 +60,8 @@ function data_loaded(data) {
 	const v3_to_center =			new THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2]);
 	const v3_to_north_pole =		new THREE.Vector3(vector_to_north_pole[0], vector_to_north_pole[1], vector_to_north_pole[2]);
 	var v3_cross =					new THREE.Vector3(0, 0, 0);
+
+	//	Compute the cross product
 	v3_cross.crossVectors(v3_to_center, v3_to_north_pole);
 	v3_cross.normalize();
 
@@ -68,12 +72,19 @@ function data_loaded(data) {
 	var quaternion =				new THREE.Quaternion();
 	quaternion.setFromAxisAngle(v3_cross, angle);
 
-	//	Set rotation
-	racing_line.object3D.rotation.setFromQuaternion(quaternion);
+	//	Assign data to the racing line
+	racing_line.setAttribute('racing_line', {
+		coords: parser.coords_to_string(recentered_coords),
+		lap_boundaries: parser.laps_to_string(lap_boundaries),
+		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
+		reorientation_quaternion: parser.vector_to_string(quaternion)
+	});
+
+	//	TODO: Replace with swizzle function to set correct Z
 	racing_line.object3D.rotation.x += (90 * (Math.PI / 180));
 }
 
 //	Start the Application
 $(document).ready(function() {
-	start_aframe(start_web);
+	start_aframe(start_web_ui);
 });

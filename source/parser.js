@@ -19,6 +19,7 @@ function gps(data) {
 
 	var gps_coords = [];
 	data.forEach(function (row, index) {
+		//	Skip header row and rows without GPS coords
 		if (index > 0 && _.isNull(row[14]) === false && _.isNull(row[15]) === false) {
 			gps_coords.push({
 				lat: row[14],
@@ -27,6 +28,26 @@ function gps(data) {
 		}
 	});
 	return gps_coords;
+}
+
+//	Identify lap boundaries from the data
+function laps(data) {
+	window.console.log('parser.laps');
+
+	var lap_boundaries = [];
+	var current_lap = null;
+	var gps_index = 0;
+	data.forEach(function (row, index) {
+		//	Skip header row and rows without GPS coords
+		if (index > 0 && _.isNull(row[14]) === false && _.isNull(row[15]) === false) {
+			if (current_lap !== row[28]) {
+				current_lap = row[28];
+				lap_boundaries.push(gps_index);
+			}
+			gps_index++;
+		}
+	});
+	return lap_boundaries;
 }
 
 //	Determine the outer bounds of the data in lat/long
@@ -109,9 +130,9 @@ function vector_to_north_pole() {
 	return ecef(90, 0);
 }
 
-//	Prep data for AFrame
-function to_string(data) {
-	window.console.log('parser.to_string');
+//	Prep coord data for AFrame
+function coords_to_string(data) {
+	window.console.log('parser.coords_to_string');
 
 	var strings = [];
 	data.forEach(function (point) {
@@ -120,4 +141,35 @@ function to_string(data) {
 	return strings.join(', ');
 }
 
-export { from_csv, gps, bounds, cartesian, recenter, vector_to_center, vector_to_north_pole, to_string };
+//	Prep lap data for AFrame
+function laps_to_string(data) {
+	window.console.log('parser.laps_to_string');
+
+	var strings = [];
+	data.forEach(function (lap_start) {
+		strings.push(lap_start);
+	});
+	return strings.join(', ');
+}
+
+//	Prep vector data for AFrame
+function vector_to_string(data) {
+	window.console.log('parser.vector_to_string');
+
+	var strings = [];
+	if (_.isUndefined(data.x) === false) {
+		strings.push(data.x);
+	}
+	if (_.isUndefined(data.y) === false) {
+		strings.push(data.y);
+	}
+	if (_.isUndefined(data.z) === false) {
+		strings.push(data.z);
+	}
+	if (_.isUndefined(data.w) === false) {
+		strings.push(data.w);
+	}
+	return strings.join(', ');
+}
+
+export { from_csv, gps, laps, bounds, cartesian, recenter, vector_to_center, vector_to_north_pole, coords_to_string, laps_to_string, vector_to_string };
