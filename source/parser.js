@@ -187,12 +187,7 @@ function smooth(data, bounds, weights, points = false) {
 		//	smallest bounds to the implied 'smoothed' point, then add
 		//	all of the distances together
 		var distance_rate_of_change_to_average = 0.0;
-
-		//	TODO: Reverse the order this is checked to catch instances
-		//	where there are *multiple* segments that are too small
 		for (var i = 1, l = distances_between_averaged_points.length; i < l; i++) {
-			// distance_to_smoothed_point += distances_between_averaged_points[i];
-
 			if (distances_between_averaged_points[(i - 1)] > distances_between_averaged_points[i]) {
 				distance_rate_of_change_to_average += ((distances_between_averaged_points[i] / distances_between_averaged_points[(i - 1)]) * weights[(i - 1)]);
 			} else {
@@ -210,10 +205,14 @@ function smooth(data, bounds, weights, points = false) {
 				_.last(vectors_between_averaged_points)
 			);
 
-		const angle = _.nth(vectors_between_averaged_points, -2).angleTo(_.last(vectors_between_averaged_points));
-		if (_.isNaN(angle) === false) {
-			final_vector.applyAxisAngle(rotation_axis_vector, angle).normalize();
-		}
+		//	Use the preceding angle between the smoothed points to
+		//	predict the final angle
+		// var angle_budget = (Math.PI / 2);
+		// const angle = _.nth(vectors_between_averaged_points, -2).angleTo(_.last(vectors_between_averaged_points));
+		// if (_.isNaN(angle) === false) {
+		// 	angle_budget = Math.max((angle_budget - angle), 0);
+		// 	final_vector.applyAxisAngle(rotation_axis_vector, angle_budget).normalize();
+		// }
 
 		//	Add the scaled vector to the most averaged point (largest
 		//	boundary) and the least averaged point to calculate where
