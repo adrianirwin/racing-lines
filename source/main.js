@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
 import * as parser from './parser';
+import * as references from './references';
 import * as aframe from 'aframe';
 import './aframe/components';
 import './styles/main.scss';
@@ -45,31 +46,52 @@ function data_loaded(data) {
 	const smoothed5_points =		document.createElement('a-entity');
 	const smoothing_inspector =		document.createElement('a-entity');
 
+	//	TEST
+	const hand_controls_left =		document.createElement('a-entity');
+	const hand_controls_right =		document.createElement('a-entity');
+	scene.appendChild(hand_controls_left);
+	scene.appendChild(hand_controls_right);
+
+	hand_controls_left.setAttribute('laser-controls', {'hand': 'left'});
+	hand_controls_right.setAttribute('laser-controls', {'hand': 'right'});
+	// <a-entity hand-controls="left"></a-entity>
+	// <a-entity hand-controls="right"></a-entity>
+
 	//	Place the racing line in the scene
 	scene.appendChild(racing_line);
 	scene.appendChild(smoothed0_line);
-	scene.appendChild(smoothed0_points);
-	scene.appendChild(smoothed1_points);
-	scene.appendChild(smoothed2_points);
-	scene.appendChild(smoothed3_points);
-	scene.appendChild(smoothed4_points);
-	scene.appendChild(smoothed5_points);
-	scene.appendChild(smoothing_inspector);
+	// scene.appendChild(smoothed0_points);
+	// scene.appendChild(smoothed1_points);
+	// scene.appendChild(smoothed2_points);
+	// scene.appendChild(smoothed3_points);
+	// scene.appendChild(smoothed4_points);
+	// scene.appendChild(smoothed5_points);
+	// scene.appendChild(smoothing_inspector);
 
-	//	Parse the lap boundaries
-	const lap_boundaries =			parser.laps(data);
+	//	TEMP: Hard-code the device profile
+	//	TODO: Provide a selector widget
+	const device_profile =			references.device('RaceCapture/Pro MK3');
 
-	//	Parse the lat/long data, extract cartesian coordinates, and recenter them around the origin
-	const gps_coords =				parser.gps(data);
-	const bounds_coords =			parser.bounds(gps_coords);
+	//	Parse the log data, and extract the lap boundaries
+	const racing_line_points =		parser.racing_line_points(data, device_profile);
+	const lap_boundaries =			parser.laps(racing_line_points);
+
+	//	Re-center the racing line data
+	const bounds_coords =			parser.bounds(racing_line_points);
 	const vector_to_center =		parser.vector_to_center(bounds_coords);
 	const vector_to_north_pole =	parser.vector_to_north_pole();
-	const cartesian_coords =		parser.cartesian(gps_coords);
-	const recentered_coords =		parser.recenter(cartesian_coords, vector_to_center[0], vector_to_center[1], vector_to_center[2]);
-	const smoothed_coords =			parser.smooth(recentered_coords.slice(0, lap_boundaries[0]), [320, 160, 80, 40, 20], [0.03, 0.07, 0.9]);
-	const smoothed_points = 		parser.smooth(recentered_coords.slice(0, lap_boundaries[0]), [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], true);
+									parser.cartesian(racing_line_points);
+									parser.recenter(racing_line_points, vector_to_center[0], vector_to_center[1], vector_to_center[2]);
 
-	//	Vector offset subsequent laps by
+	//	Trim the data to speed up development
+	const first_lap =				racing_line_points.slice(0, lap_boundaries[0]);
+
+	//	Smooth the raw cartesian points
+									parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9]);
+	const smoothed_points = 		parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], true);
+
+	//	Vector to offset subsequent laps by
+	//	NOTE: Only visible if more than one lap is being rendered
 	const lap_offset_vector =		new THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2]).normalize();
 
 	//	Three significant vectors
@@ -93,14 +115,14 @@ function data_loaded(data) {
 
 	//	Assign data to the racing line
 	racing_line.setAttribute('racing_line', {
-		coords: parser.coords_to_string(recentered_coords.slice(0, lap_boundaries[0])),
+		coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.raw'),
 		lap_boundaries: parser.laps_to_string(lap_boundaries),
 		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
 		reorientation_quaternion: parser.vector_to_string(quaternion)
 	});
 
 	smoothed0_line.setAttribute('racing_line', {
-		coords: parser.coords_to_string(smoothed_coords),
+		coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.smoothed'),
 		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
 		reorientation_quaternion: parser.vector_to_string(quaternion),
 		colour: '#FF66FF'
