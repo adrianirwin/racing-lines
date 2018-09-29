@@ -168,17 +168,20 @@ function recenter(data, x, y, z) {
 }
 
 //	Smooth the data
-function smooth(data, bounds, weights, points = false) {
+function smooth(data, bounds, weights, points = false, interval = 50, listener = null, event_name = null) {
 	window.console.log('parser.smooth');
 
-	const smoothed_points_by_bounds = [];
-	bounds.forEach(function () {
-		smoothed_points_by_bounds.push([]);
-	});
-	smoothed_points_by_bounds.push([]);
+	// const smoothed_points_by_bounds = [];
+	// if (points === true) {
+	// 	bounds.forEach(function () {
+	// 		smoothed_points_by_bounds.push([]);
+	// 	});
+	// 	smoothed_points_by_bounds.push([]);
+	// }
 
 	//	Iterate on each point in the racing line
-	data.forEach(function (point, index) {
+	// data.forEach(function (point, index) {
+	const smooth_by_averages = function (data, point, index, length, listener, event_name) {
 		const averaged_points = [];
 
 		//	Find the point that is the average position of the points
@@ -210,7 +213,9 @@ function smooth(data, bounds, weights, points = false) {
 				average_point.z = _.get(point, 'coordinates.cartesian.raw.z');
 			}
 			averaged_points.push(average_point);
-			smoothed_points_by_bounds[bound_i].push(average_point);
+			if (points === true) {
+				smoothed_points_by_bounds[bound_i].push(average_point);
+			}
 		});
 
 		//	Convert to Vector3 to use some of the built-in methods
@@ -279,13 +284,43 @@ function smooth(data, bounds, weights, points = false) {
 			'z': final_vector.z
 		};
 
-		_.set(data, '[' + index + '].coordinates.cartesian.smoothed', smoothed_point);
-		_.last(smoothed_points_by_bounds).push(smoothed_point)
-	});
+		//	Broadcast the new point
+		if (_.isNull(listener) === false && _.isNull(event_name) === false) {
+			listener.dispatchEvent(new CustomEvent('smoothed', {
+				'detail': {
+					'point': smoothed_point, 'index': index, 'length': length }
+				}
+			));
+		}
 
-	if (points === true) {
-		return smoothed_points_by_bounds;
+		//	Store point for returning as a separate data set
+		// if (points === true) {
+		// 	_.last(smoothed_points_by_bounds).push(smoothed_point)
+		// }
+
+		//	Update the input data set
+		// _.set(data, '[' + index + '].coordinates.cartesian.smoothed', smoothed_point);
+		return smoothed_point;
 	}
+	// });
+
+	// if (points === true) {
+	// 	return smoothed_points_by_bounds;
+	// }
+
+	var index_test = 0;
+	var length = data.length;
+	var smoothed_points = [];
+	const temp_data = JSON.stringify(data);
+	var cloned_data = JSON.parse(temp_data);
+	var cloned_data_for_points = JSON.parse(temp_data);
+	const loop = setInterval(() => {
+		smoothed_points.push(smooth_by_averages(cloned_data, cloned_data_for_points.shift(), index_test, length, listener, event_name));
+		index_test++;
+		if (index_test >= length) {
+			clearInterval(loop);
+		}
+	}, interval);
 }
 
 //	Vector to the center of the bounds

@@ -1,22 +1,170 @@
 import * as _ from 'lodash';
 import * as parser from './parser';
 import * as references from './references';
-import * as aframe from 'aframe';
+import * as AFRAME from 'aframe';
 import './aframe/components';
 import './styles/main.scss';
 
+const vr_ui_elements = [];
+
 //	Add A-Frame's <a-scene> to start the scene
-function start_aframe(callback) {
+function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
 	window.console.log('start_aframe');
 
 	$('body').append('<a-scene>');
 	$('a-scene').on('loaded', callback);
+
+	if (_.isNull(callback_vr_enter) === false) {
+		$('a-scene').on('enter-vr', callback_vr_enter);
+
+		if (_.isNull(callback_vr_exit) === false) {
+			$('a-scene').on('exit-vr', callback_vr_exit);
+		}
+	}
 }
 
 function start_web_ui() {
 	window.console.log('start_web_ui');
 
 	data_input($('input[name="log_file"]'), data_loaded);
+
+	start_vr_scene();
+}
+
+function start_vr_ui() {
+	window.console.log('start_vr_ui');
+
+	const camera = document.querySelector('a-entity[camera]');
+
+	const text = document.createElement('a-entity');
+	text.setAttribute('position', '0.025 0 -0.5');
+	text.setAttribute('text', {
+		'width': 0.2,
+		'anchor': 'center',
+		'color': 'rgb(240, 240, 255)',
+		'value': 'QUANTITY LOADED 5/10'
+	});
+	camera.appendChild(text);
+
+	vr_ui_elements.push(text);
+
+	// for(var i = 0; i < 30; i++) {
+
+	// 	var x = (i * (Math.random() * 3));
+	// 	var y = (i * (Math.random() * 3));
+	// 	var z = (i * (Math.random() * 10)) * -1;
+
+	// 	const text = document.createElement('a-entity');
+	// 	text.setAttribute('position', (x + ' ' + y + '' + z));
+	// 	text.setAttribute('text', {
+	// 		'width': 2,
+	// 		'color': 'red',
+	// 		'value': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam'
+	// 	});
+	// 	camera.appendChild(text);
+	// }
+	// window.console.info(camera);
+}
+
+function exit_vr_ui() {
+	window.console.log('exit_vr_ui');
+
+	//	Remove UI elements only shown in VR
+	while(vr_ui_elements.length > 0) {
+		let element = vr_ui_elements.pop();
+		element.parentNode.removeChild(element);
+	}
+}
+
+function start_vr_scene() {
+	window.console.log('start_vr_scene');
+
+	const scene = document.querySelector('a-scene');
+	// window.console.info(scene);
+
+	const camera = document.querySelector('a-entity[camera]');
+	// window.console.info(camera);
+
+	//	Ground Plane Grid
+	const ground_plane = document.createElement('a-entity');
+	ground_plane.setAttribute('ground_plane', {'count': 150, 'gap': 1, 'size': 0.025});
+	ground_plane.setAttribute('position', '0 -1.5 0');
+	ground_plane.object3D.rotation.x += (-90 * (Math.PI / 180));
+	scene.appendChild(ground_plane);
+	window.console.info(ground_plane);
+
+	//	Test container
+	// const group = document.createElement('a-entity');
+	// group.setAttribute('id', 'monkey');
+	// scene.appendChild(group);
+
+	//	Add test text
+	// const text = document.createElement('a-entity');
+	// text.setAttribute('id', 'test_text');
+	// text.setAttribute('position', '0 0 -10');
+	// text.setAttribute('text', {
+	// 	'width': 2,
+	// 	'color': 'red',
+	// 	'value': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam'
+	// });
+	// scene.appendChild(text);
+
+	//	Monkey for grip/rotate test
+	// const monkey = document.createElement('a-entity');
+	// monkey.setAttribute('position', '0 0 0');
+	// monkey.setAttribute('gltf-model', 'url(/assets/monkey.gltf)');
+	// monkey.setAttribute('id', 'monkey');
+	// group.appendChild(monkey);
+
+	//	TEST
+	// const hand_controls_left = document.createElement('a-entity');
+	const hand_controls_left = document.createElement('a-entity');
+	const hand_controls_right = document.createElement('a-entity');
+
+	hand_controls_left.setAttribute('oculus-touch-controls', {'hand': 'left'});
+	hand_controls_right.setAttribute('oculus-touch-controls', {'hand': 'right'});
+	hand_controls_left.setAttribute('id', 'left_hand');
+	hand_controls_right.setAttribute('id', 'right_hand');
+
+	// hand_controls_right.setAttribute('super-hands', '');
+	// hand_controls_right.setAttribute('sphere-collider', {'objects': 'a-box'});
+
+	// hand_controls_left.setAttribute('hand-controls', {'hand': 'left'});
+	// hand_controls_right.setAttribute('hand-controls', {'hand': 'right'});
+
+	scene.appendChild(hand_controls_left);
+	scene.appendChild(hand_controls_right);
+
+	// hand_controls_right.addEventListener('gripdown', function (event) {
+	// 	// var monkey = document.querySelector('#monkey');
+	// 	// var quaternion = event.target.object3D.quaternion;
+	// 	// window.console.info('griptouchend A', event, event.target.object3D.quaternion);
+	// 	// window.console.info('griptouchend B', monkey.object3D);
+	// 	// window.console.info('griptouchend', event);
+	// 	// monkey.object3D.setRotationFromQuaternion(quaternion);
+
+	// 	window.test_tick();
+		
+	// });
+
+	// hand_controls_left.addEventListener('gripdown', function (event) {
+	// 	window.console.info('gripdown', event);
+	// 	document.querySelector('#monkey').setAttribute('grabbable', '');
+	// });
+
+	// hand_controls_left.addEventListener('gripup', function (event) {
+	// 	window.console.info('gripup', event);
+	// 	document.querySelector('#monkey').removeAttribute('grabbable');
+	// });
+	
+
+	// window.console.info(hand_controls_left);
+	// window.console.info(hand_controls_right);
+	// <a-entity hand-controls="left"></a-entity>
+	// <a-entity hand-controls="right"></a-entity>
+
+	// <a-entity oculus-touch-controls="hand: left"></a-entity>
+	// <a-entity oculus-touch-controls="hand: right"></a-entity>
 }
 
 function data_input($input, callback) {
@@ -38,24 +186,13 @@ function data_loaded(data) {
 	const scene =					document.querySelector('a-scene');
 	const racing_line =				document.createElement('a-entity');
 	const smoothed0_line =			document.createElement('a-entity');
-	const smoothed0_points =		document.createElement('a-entity');
-	const smoothed1_points =		document.createElement('a-entity');
-	const smoothed2_points =		document.createElement('a-entity');
-	const smoothed3_points =		document.createElement('a-entity');
-	const smoothed4_points =		document.createElement('a-entity');
-	const smoothed5_points =		document.createElement('a-entity');
-	const smoothing_inspector =		document.createElement('a-entity');
-
-	//	TEST
-	const hand_controls_left =		document.createElement('a-entity');
-	const hand_controls_right =		document.createElement('a-entity');
-	scene.appendChild(hand_controls_left);
-	scene.appendChild(hand_controls_right);
-
-	hand_controls_left.setAttribute('laser-controls', {'hand': 'left'});
-	hand_controls_right.setAttribute('laser-controls', {'hand': 'right'});
-	// <a-entity hand-controls="left"></a-entity>
-	// <a-entity hand-controls="right"></a-entity>
+	// const smoothed0_points =		document.createElement('a-entity');
+	// const smoothed1_points =		document.createElement('a-entity');
+	// const smoothed2_points =		document.createElement('a-entity');
+	// const smoothed3_points =		document.createElement('a-entity');
+	// const smoothed4_points =		document.createElement('a-entity');
+	// const smoothed5_points =		document.createElement('a-entity');
+	// const smoothing_inspector =		document.createElement('a-entity');
 
 	//	Place the racing line in the scene
 	scene.appendChild(racing_line);
@@ -85,10 +222,14 @@ function data_loaded(data) {
 
 	//	Trim the data to speed up development
 	const first_lap =				racing_line_points.slice(0, lap_boundaries[0]);
+	const first_lap_test =			racing_line_points.slice(0, lap_boundaries[0]);
 
 	//	Smooth the raw cartesian points
-									parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9]);
-	const smoothed_points = 		parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], true);
+	window.addEventListener('smoothed', function (event) {
+		window.console.info(Date.now(), 'smoothed', (event.detail.index + '/' + event.detail.length));
+	}, false);
+									parser.smooth(first_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 50, window, 'smoothed');
+	// const smoothed_points = 		parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], true);
 
 	//	Vector to offset subsequent laps by
 	//	NOTE: Only visible if more than one lap is being rendered
@@ -128,65 +269,71 @@ function data_loaded(data) {
 		colour: '#FF66FF'
 	});
 
-	smoothed0_points.setAttribute('racing_dots', {
-		coords: parser.coords_to_string(smoothed_points[0]),
-		reorientation_quaternion: parser.vector_to_string(quaternion),
-		colour: '#880000'
-	});
+	// smoothed0_points.setAttribute('racing_dots', {
+	// 	coords: parser.coords_to_string(smoothed_points[0]),
+	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	colour: '#880000'
+	// });
 
-	smoothed1_points.setAttribute('racing_dots', {
-		coords: parser.coords_to_string(smoothed_points[1]),
-		reorientation_quaternion: parser.vector_to_string(quaternion),
-		colour: '#BB0044'
-	});
+	// smoothed1_points.setAttribute('racing_dots', {
+	// 	coords: parser.coords_to_string(smoothed_points[1]),
+	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	colour: '#BB0044'
+	// });
 
-	smoothed2_points.setAttribute('racing_dots', {
-		coords: parser.coords_to_string(smoothed_points[2]),
-		reorientation_quaternion: parser.vector_to_string(quaternion),
-		colour: '#FF0088'
-	});
+	// smoothed2_points.setAttribute('racing_dots', {
+	// 	coords: parser.coords_to_string(smoothed_points[2]),
+	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	colour: '#FF0088'
+	// });
 
-	smoothed3_points.setAttribute('racing_dots', {
-		coords: parser.coords_to_string(smoothed_points[3]),
-		reorientation_quaternion: parser.vector_to_string(quaternion),
-		colour: '#FF44BB'
-	});
+	// smoothed3_points.setAttribute('racing_dots', {
+	// 	coords: parser.coords_to_string(smoothed_points[3]),
+	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	colour: '#FF44BB'
+	// });
 
-	smoothed4_points.setAttribute('racing_dots', {
-		coords: parser.coords_to_string(smoothed_points[4]),
-		reorientation_quaternion: parser.vector_to_string(quaternion),
-		colour: '#FF88FF'
-	});
+	// smoothed4_points.setAttribute('racing_dots', {
+	// 	coords: parser.coords_to_string(smoothed_points[4]),
+	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	colour: '#FF88FF'
+	// });
 
-	smoothed5_points.setAttribute('racing_dots', {
-		coords: parser.coords_to_string(smoothed_points[5]),
-		reorientation_quaternion: parser.vector_to_string(quaternion),
-		colour: '#FFFFFF'
-	});
+	// smoothed5_points.setAttribute('racing_dots', {
+	// 	coords: parser.coords_to_string(smoothed_points[5]),
+	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	colour: '#FFFFFF'
+	// });
 
-	smoothing_inspector.setAttribute('smoothing_inspector', {
-		coords0: parser.coords_to_string(smoothed_points[0]),
-		coords1: parser.coords_to_string(smoothed_points[1]),
-		coords2: parser.coords_to_string(smoothed_points[2]),
-		coords3: parser.coords_to_string(smoothed_points[3]),
-		coords4: parser.coords_to_string(smoothed_points[4]),
-		coords5: parser.coords_to_string(smoothed_points[5]),
-		reorientation_quaternion: parser.vector_to_string(quaternion)
-	});
+	// smoothing_inspector.setAttribute('smoothing_inspector', {
+	// 	coords0: parser.coords_to_string(smoothed_points[0]),
+	// 	coords1: parser.coords_to_string(smoothed_points[1]),
+	// 	coords2: parser.coords_to_string(smoothed_points[2]),
+	// 	coords3: parser.coords_to_string(smoothed_points[3]),
+	// 	coords4: parser.coords_to_string(smoothed_points[4]),
+	// 	coords5: parser.coords_to_string(smoothed_points[5]),
+	// 	reorientation_quaternion: parser.vector_to_string(quaternion)
+	// });
 
 	//	TODO: Replace with swizzle function to set correct Z?
 	racing_line.object3D.rotation.x += (-90 * (Math.PI / 180));
 	smoothed0_line.object3D.rotation.x += (-90 * (Math.PI / 180));
-	smoothed0_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	smoothed1_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	smoothed2_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	smoothed3_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	smoothed4_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	smoothed5_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	smoothing_inspector.object3D.rotation.x += (-90 * (Math.PI / 180));
+	// smoothed0_points.object3D.rotation.x += (-90 * (Math.PI / 180));
+	// smoothed1_points.object3D.rotation.x += (-90 * (Math.PI / 180));
+	// smoothed2_points.object3D.rotation.x += (-90 * (Math.PI / 180));
+	// smoothed3_points.object3D.rotation.x += (-90 * (Math.PI / 180));
+	// smoothed4_points.object3D.rotation.x += (-90 * (Math.PI / 180));
+	// smoothed5_points.object3D.rotation.x += (-90 * (Math.PI / 180));
+	// smoothing_inspector.object3D.rotation.x += (-90 * (Math.PI / 180));
+}
+
+async function data_processing() {
+	window.console.log('data_processing');
+
+	parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9]);
 }
 
 //	Start the Application
 $(document).ready(function() {
-	start_aframe(start_web_ui);
+	start_aframe(start_web_ui, start_vr_ui, exit_vr_ui);
 });

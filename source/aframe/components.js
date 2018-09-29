@@ -1,6 +1,70 @@
 import * as _ from 'lodash';
 import * as AFRAME from 'aframe';
 
+AFRAME.registerComponent('ground_plane', {
+	schema: {
+		colour: {
+			type: 'color', default: '#D9C772'
+		},
+		count: {
+			type: 'number', default: 20
+		},
+		gap: {
+			type: 'number', default: 10
+		},
+		size: {
+			type: 'number', default: 0.5
+		}
+	},
+
+	init: function () {
+		const self = this;
+
+		//	Materials
+		// let texture = new THREE.TextureLoader().load('assets/gradient_circle.png');
+
+		// self.ground_plane_dots_material = new THREE.PointsMaterial({ color: self.data.colour, size: self.data.size, sizeAttenuation: true });
+		self.ground_plane_dots_material = new THREE.PointsMaterial({ vertexColors: THREE.VertexColors, size: self.data.size });
+
+		//	Create the racing line
+		self.ground_plane_dots_geometry = new THREE.Geometry();
+
+		let span = (self.data.gap * self.data.count) / 2;
+		let total_points = ((self.data.count + 1) * (self.data.count + 1));
+		let maximum_distance = (new THREE.Line3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(span, 0, 0))).distance();
+
+
+
+		for (var x = -span; x <= span; x += self.data.gap) {
+			// window.console.info(x);
+			for (var y = -span; y <= span; y += self.data.gap) {
+				self.ground_plane_dots_geometry.vertices.push(new THREE.Vector3(x, y, 0));
+			}
+		}
+
+		for (var c = 0; c < total_points; c++) {
+			let point = new THREE.Vector3(self.ground_plane_dots_geometry.vertices[c].x, self.ground_plane_dots_geometry.vertices[c].y, 0);
+			let vector_to_point = new THREE.Line3(new THREE.Vector3(0, 0, 0), point);
+			let factor = Math.abs(Math.min((vector_to_point.distance() / maximum_distance), 1) - 1);
+			let colour = new THREE.Color((1 * factor), (0.25 * factor), (0.1 * factor));
+
+			self.ground_plane_dots_geometry.colors.push(colour);
+		}
+
+		window.console.info('vertices', self.ground_plane_dots_geometry.vertices);
+		window.console.info('colors', self.ground_plane_dots_geometry.colors);
+
+		self.ground_plane_dots = new THREE.Points(self.ground_plane_dots_geometry, self.ground_plane_dots_material);
+		self.el.setObject3D('ground_plane_dots', self.ground_plane_dots);
+	},
+
+	remove: function () {
+		const self = this;
+
+		self.el.removeObject3D('ground_plane_dots');
+	}
+});
+
 AFRAME.registerComponent('racing_line', {
 	schema: {
 		colour: {
@@ -296,6 +360,36 @@ AFRAME.registerComponent('smoothing_inspector', {
 		const self = this;
 
 		self.el.removeObject3D('smoothing_inspector');
+	}
+});
+
+AFRAME.registerComponent('grabbable', {
+	schema: {
+		hand: {type: 'selector', default: '#left_hand'}
+	},
+	init: function () {
+		const self = this;
+
+		window.console.info('grabbable', self, self.data.hand);
+
+
+		window.console.info(self.el);
+		self.hand = self.data.hand;
+		self.thumbstick = _.get(self.hand, 'components["tracked-controls"].axis', null);
+		self.el.setAttribute('rotation', { x: 0, y: 0, z: 0 });
+	},
+
+	tick: function (time, timeDelta) {
+		const self = this;
+
+		if (self.thumbstick !== null) {
+			window.console.info(Math.round(time), self.thumbstick[0], self.thumbstick[1]);
+
+			const rotation = self.el.getAttribute('rotation', { x: 0, y: 0, z: 0 });
+			rotation.y += (self.thumbstick[0] * 10);
+			self.el.setAttribute('rotation', rotation);
+			// this.el.setAttribute();
+		}
 	}
 });
 
