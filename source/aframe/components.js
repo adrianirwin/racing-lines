@@ -20,23 +20,16 @@ AFRAME.registerComponent('ground_plane', {
 	init: function () {
 		const self = this;
 
-		//	Materials
-		// let texture = new THREE.TextureLoader().load('assets/gradient_circle.png');
-
 		// self.ground_plane_dots_material = new THREE.PointsMaterial({ color: self.data.colour, size: self.data.size, sizeAttenuation: true });
 		self.ground_plane_dots_material = new THREE.PointsMaterial({ vertexColors: THREE.VertexColors, size: self.data.size });
 
-		//	Create the racing line
 		self.ground_plane_dots_geometry = new THREE.Geometry();
 
 		let span = (self.data.gap * self.data.count) / 2;
 		let total_points = ((self.data.count + 1) * (self.data.count + 1));
 		let maximum_distance = (new THREE.Line3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(span, 0, 0))).distance();
 
-
-
 		for (var x = -span; x <= span; x += self.data.gap) {
-			// window.console.info(x);
 			for (var y = -span; y <= span; y += self.data.gap) {
 				self.ground_plane_dots_geometry.vertices.push(new THREE.Vector3(x, y, 0));
 			}
@@ -50,9 +43,6 @@ AFRAME.registerComponent('ground_plane', {
 
 			self.ground_plane_dots_geometry.colors.push(colour);
 		}
-
-		window.console.info('vertices', self.ground_plane_dots_geometry.vertices);
-		window.console.info('colors', self.ground_plane_dots_geometry.colors);
 
 		self.ground_plane_dots = new THREE.Points(self.ground_plane_dots_geometry, self.ground_plane_dots_material);
 		self.el.setObject3D('ground_plane_dots', self.ground_plane_dots);
