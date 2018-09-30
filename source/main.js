@@ -11,7 +11,7 @@ const vr_ui_elements = [];
 function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
 	window.console.log('start_aframe');
 
-	$('body').append('<a-scene>');
+	$('body').append('<a-scene background="color: #353638">');
 	$('a-scene').on('loaded', callback);
 
 	if (_.isNull(callback_vr_enter) === false) {
@@ -37,12 +37,12 @@ function start_vr_ui() {
 	const camera = document.querySelector('a-entity[camera]');
 
 	const text = document.createElement('a-entity');
-	text.setAttribute('position', '0.025 0 -0.5');
+	text.setAttribute('position', '0.04 0 -0.5');
 	text.setAttribute('text', {
 		'width': 0.2,
 		'anchor': 'center',
 		'color': 'rgb(240, 240, 255)',
-		'value': 'QUANTITY LOADED 5/10'
+		'value': 'HUD - Coming Soon'
 	});
 	camera.appendChild(text);
 
@@ -91,7 +91,6 @@ function start_vr_scene() {
 	ground_plane.setAttribute('position', '0 -1.5 0');
 	ground_plane.object3D.rotation.x += (-90 * (Math.PI / 180));
 	scene.appendChild(ground_plane);
-	window.console.info(ground_plane);
 
 	//	Test container
 	// const group = document.createElement('a-entity');
@@ -223,12 +222,13 @@ function data_loaded(data) {
 	//	Trim the data to speed up development
 	const first_lap =				racing_line_points.slice(0, lap_boundaries[0]);
 	const first_lap_test =			racing_line_points.slice(0, lap_boundaries[0]);
+	const second_lap_test =			racing_line_points.slice(lap_boundaries[1], lap_boundaries[2]);
 
 	//	Smooth the raw cartesian points
-	window.addEventListener('smoothed', function (event) {
-		window.console.info(Date.now(), 'smoothed', (event.detail.index + '/' + event.detail.length));
-	}, false);
-									parser.smooth(first_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 50, window, 'smoothed');
+	// window.addEventListener('smoothed', function (event) {
+	// 	window.console.info(Date.now(), 'smoothed', (event.detail.index + '/' + event.detail.length));
+	// }, false);
+	// 								parser.smooth(first_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 50, window, 'smoothed');
 	// const smoothed_points = 		parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], true);
 
 	//	Vector to offset subsequent laps by
@@ -256,18 +256,30 @@ function data_loaded(data) {
 
 	//	Assign data to the racing line
 	racing_line.setAttribute('racing_line', {
-		coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.raw'),
+		// coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.raw'),
+		coords: parser.coords_to_string(second_lap_test, 'coordinates.cartesian.raw'),
 		lap_boundaries: parser.laps_to_string(lap_boundaries),
 		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
 		reorientation_quaternion: parser.vector_to_string(quaternion)
 	});
 
 	smoothed0_line.setAttribute('racing_line', {
-		coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.smoothed'),
+		// coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.smoothed'),
+		coords: '',
 		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
+		length: second_lap_test.length,
 		reorientation_quaternion: parser.vector_to_string(quaternion),
 		colour: '#FF66FF'
 	});
+
+	window.addEventListener('smoothed', function (event) {
+		let coords = smoothed0_line.getAttribute('racing_line').coords;
+		coords.push(event.detail.point);
+		coords = coords.map(AFRAME.utils.coordinates.stringify);
+		coords = coords.join(', ');
+		smoothed0_line.setAttribute('racing_line', 'coords', coords);
+	}, false);
+	parser.smooth(second_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 15, window, 'smoothed');
 
 	// smoothed0_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[0]),
@@ -325,6 +337,11 @@ function data_loaded(data) {
 	// smoothed4_points.object3D.rotation.x += (-90 * (Math.PI / 180));
 	// smoothed5_points.object3D.rotation.x += (-90 * (Math.PI / 180));
 	// smoothing_inspector.object3D.rotation.x += (-90 * (Math.PI / 180));
+
+	racing_line.setAttribute('position', '0.0 1.0 -1.0');
+	smoothed0_line.setAttribute('position', '0.0 1.0 -1.0');
+	racing_line.setAttribute('scale', '0.01 0.01 0.01');
+	smoothed0_line.setAttribute('scale', '0.01 0.01 0.01');
 }
 
 async function data_processing() {

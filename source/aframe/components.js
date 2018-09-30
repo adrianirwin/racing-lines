@@ -4,7 +4,7 @@ import * as AFRAME from 'aframe';
 AFRAME.registerComponent('ground_plane', {
 	schema: {
 		colour: {
-			type: 'color', default: '#D9C772'
+			type: 'color', default: '#FFFFF'
 		},
 		count: {
 			type: 'number', default: 20
@@ -19,6 +19,8 @@ AFRAME.registerComponent('ground_plane', {
 
 	init: function () {
 		const self = this;
+
+		const temp_colour_clamp = new THREE.Color(0x353638);
 
 		// self.ground_plane_dots_material = new THREE.PointsMaterial({ color: self.data.colour, size: self.data.size, sizeAttenuation: true });
 		self.ground_plane_dots_material = new THREE.PointsMaterial({ vertexColors: THREE.VertexColors, size: self.data.size });
@@ -39,7 +41,11 @@ AFRAME.registerComponent('ground_plane', {
 			let point = new THREE.Vector3(self.ground_plane_dots_geometry.vertices[c].x, self.ground_plane_dots_geometry.vertices[c].y, 0);
 			let vector_to_point = new THREE.Line3(new THREE.Vector3(0, 0, 0), point);
 			let factor = Math.abs(Math.min((vector_to_point.distance() / maximum_distance), 1) - 1);
-			let colour = new THREE.Color((1 * factor), (0.25 * factor), (0.1 * factor));
+			let colour = new THREE.Color(
+				Math.max((0.4 * factor), temp_colour_clamp.r),
+				Math.max((0.45 * factor), temp_colour_clamp.g),
+				Math.max((0.65 * factor), temp_colour_clamp.b)
+			);
 
 			self.ground_plane_dots_geometry.colors.push(colour);
 		}
@@ -62,7 +68,11 @@ AFRAME.registerComponent('racing_line', {
 		},
 		coords: {
 			parse: function (value) {
-				return value.split(',').map(AFRAME.utils.coordinates.parse);
+				if (_.isEmpty(value) === false && _.isString(value) === true) {
+					return value.split(',').map(AFRAME.utils.coordinates.parse);
+				} else {
+					return [];
+				}
 			},
 			default: [
 				{x:  1, y: 0, z:  0},
@@ -80,6 +90,9 @@ AFRAME.registerComponent('racing_line', {
 		lap_offset_length: {
 			type: 'number', default: 10
 		},
+		length: {
+			type: 'number', default: 0
+		},
 		reorientation_quaternion: {
 			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0}
 		}
@@ -88,42 +101,61 @@ AFRAME.registerComponent('racing_line', {
 	init: function () {
 		const self = this;
 
-		//	Materials
-		self.racing_line_material =		new THREE.LineBasicMaterial({ color: self.data.colour });
-		self.start_finish_material =	new THREE.LineBasicMaterial({ color: '#FFFF00' });
-	},
+		//	Will the line 'grow' over time via the update call?
+		self.will_grow = (self.data.length > 0)? true: false;
 
-	update: function (oldData) {
-		const self = this;
+		//	Materials
+		self.racing_line_material = new THREE.LineBasicMaterial({ color: self.data.colour });
+		self.start_finish_material = new THREE.LineBasicMaterial({ color: '#FFFF00' });
 
 		self.start_finish_points = [];
 
+		//	Geometry
+		self.racing_line_geometry = (self.will_grow === true)? new THREE.BufferGeometry(): new THREE.Geometry();
+		if (self.will_grow === true) {
+			//	There seems to be something amiss with the update call that causes it to miss every other addition
+			self.vertices_count = 0;
+
+			self.positions = new Float32Array(self.data.length * 3);
+			self.racing_line_geometry.addAttribute('position', new THREE.BufferAttribute(self.positions, 3));
+			self.racing_line_geometry.setDrawRange(0, self.data.coords.length);
+		}
+
 		//	Create the racing line
-		self.racing_line_geometry =		new THREE.Geometry();
-		self.racing_line =				new THREE.Line(self.racing_line_geometry, self.racing_line_material);
+		self.racing_line = new THREE.Line(self.racing_line_geometry, self.racing_line_material);
 		self.el.setObject3D('racing_line', self.racing_line);
 
 		//	Plot racing line vertices
-		var lap_offset_increment = 0;
-		self.data.coords.forEach(function (point, index) {
-			var start_finish =			false;
-			var vertex =				new THREE.Vector3(point.x, point.y, point.z);
+		let lap_offset_increment = 0;
+		self.data.coords.forEach((point, index) => {
+			if (self.will_grow === true) {
+				const position = (index * 3);
 
-			//	Calculate vertical offset
-			if (_.indexOf(self.data.lap_boundaries, String(index)) !== -1) {
-				lap_offset_increment++;
-				start_finish = true;
+				self.positions[(position)] = point.x;
+				self.positions[(position + 1)] = point.y;
+				self.positions[(position + 2)] = point.z;
+
+				self.vertices_count++;
+			} else {
+				let start_finish = false;
+				const vertex = new THREE.Vector3(point.x, point.y, point.z);
+
+				//	Calculate vertical offset
+				if (_.indexOf(self.data.lap_boundaries, String(index)) !== -1) {
+					lap_offset_increment++;
+					start_finish = true;
+				}
+				const lap_offset_vector = new THREE.Vector3(
+					self.data.lap_offset_vector.x,
+					self.data.lap_offset_vector.y,
+					self.data.lap_offset_vector.z
+				);
+				lap_offset_vector.multiplyScalar(lap_offset_increment * self.data.lap_offset_length);
+
+				//	Apply the offset and add the raw vertex to the racing line
+				vertex.add(lap_offset_vector);
+				self.racing_line_geometry.vertices.push(vertex);
 			}
-			var lap_offset_vector =  	new THREE.Vector3(
-				self.data.lap_offset_vector.x,
-				self.data.lap_offset_vector.y,
-				self.data.lap_offset_vector.z
-			);
-			lap_offset_vector.multiplyScalar(lap_offset_increment * self.data.lap_offset_length);
-
-			//	Apply the offset and add the raw vertex to the racing line
-			vertex.add(lap_offset_vector);
-			self.racing_line_geometry.vertices.push(vertex);
 		});
 
 		//	The original GPS data is stored as lat/long, after
@@ -131,8 +163,8 @@ AFRAME.registerComponent('racing_line', {
 		//	still correct in 'globe' space. This applies the calculated
 		//	rotation transformation to the racing line geometry,
 		//	so 'up' for subsequent operations is now Z+.
-		var rotation_matrix =			new THREE.Matrix4();
-		var reorientation_quaternion =	new THREE.Quaternion(
+		const rotation_matrix = new THREE.Matrix4();
+		const reorientation_quaternion = new THREE.Quaternion(
 			self.data.reorientation_quaternion.x,
 			self.data.reorientation_quaternion.y,
 			self.data.reorientation_quaternion.z,
@@ -141,13 +173,51 @@ AFRAME.registerComponent('racing_line', {
 		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
 		self.racing_line_geometry.applyMatrix(rotation_matrix);	
 
-		//	Create start/finish lines
-		self.start_finish_points.forEach(function (point, index) {
-			var start_finish_geometry =	new THREE.Geometry();
-			start_finish_geometry.vertices.push(point);
-			start_finish_geometry.vertices.push(new THREE.Vector3((point.x + 20), (point.y + 20), point.z));
-			self.el.setObject3D(('start_finish_line_' + index), new THREE.Line(start_finish_geometry, self.start_finish_material));
-		});
+		if (self.will_grow === true) {
+			//	Create start/finish lines
+			self.start_finish_points.forEach(function (point, index) {
+				const start_finish_geometry =	new THREE.Geometry();
+				start_finish_geometry.vertices.push(point);
+				start_finish_geometry.vertices.push(new THREE.Vector3((point.x + 20), (point.y + 20), point.z));
+				self.el.setObject3D(('start_finish_line_' + index), new THREE.Line(start_finish_geometry, self.start_finish_material));
+			});
+		}
+	},
+
+	update: function (oldData) {
+		const self = this;
+
+		if (
+			self.will_grow === true
+			&& _.isEmpty(oldData.coords) === false
+			&& _.isEmpty(self.data.coords) === false
+		) {
+			const diff = self.data.coords.slice(self.vertices_count);
+			const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
+
+			_.forEach(diff, (point, index) => {
+				const vertex = new THREE.Vector3(point.x, point.y, point.z);
+				const reorientation_quaternion = new THREE.Quaternion(
+					self.data.reorientation_quaternion.x,
+					self.data.reorientation_quaternion.y,
+					self.data.reorientation_quaternion.z,
+					self.data.reorientation_quaternion.w
+				);
+				vertex.applyQuaternion(reorientation_quaternion);
+
+				const position = (self.vertices_count * 3);
+
+				self.positions[(position)] = vertex.x;
+				self.positions[(position + 1)] = vertex.y;
+				self.positions[(position + 2)] = vertex.z;
+
+				self.vertices_count++;
+			});
+
+			self.racing_line_geometry.setDrawRange(0, self.vertices_count);
+			self.racing_line_geometry.attributes.position.needsUpdate = true;
+			self.racing_line_geometry.computeBoundingSphere();
+		}
 	},
 
 	remove: function () {
