@@ -16,6 +16,13 @@ module.exports = {
 			{
 				test: /\.(s*)css$/,
 				use: ['style-loader', 'css-loader', 'sass-loader']
+			},
+			{
+				test: /\.js$/,
+				include: [
+					path.resolve(__dirname, "./source/workers")
+				],
+				use: { loader: 'worker-loader' }
 			}
 		]
 	},

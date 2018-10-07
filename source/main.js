@@ -1,11 +1,21 @@
+//	Libraries
 import * as _ from 'lodash';
 import * as parser from './parser';
 import * as references from './references';
 import * as AFRAME from 'aframe';
+
+//	Custom A-Frame Components
 import './aframe/components';
+
+//	Web Workers
+import Smoother from './workers/smoother.js';
+
+//	Styles
 import './styles/main.scss';
 
+
 const vr_ui_elements = [];
+const smoother = new Smoother();
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
@@ -47,23 +57,6 @@ function start_vr_ui() {
 	camera.appendChild(text);
 
 	vr_ui_elements.push(text);
-
-	// for(var i = 0; i < 30; i++) {
-
-	// 	var x = (i * (Math.random() * 3));
-	// 	var y = (i * (Math.random() * 3));
-	// 	var z = (i * (Math.random() * 10)) * -1;
-
-	// 	const text = document.createElement('a-entity');
-	// 	text.setAttribute('position', (x + ' ' + y + '' + z));
-	// 	text.setAttribute('text', {
-	// 		'width': 2,
-	// 		'color': 'red',
-	// 		'value': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam'
-	// 	});
-	// 	camera.appendChild(text);
-	// }
-	// window.console.info(camera);
 }
 
 function exit_vr_ui() {
@@ -272,14 +265,25 @@ function data_loaded(data) {
 		colour: '#FF66FF'
 	});
 
-	window.addEventListener('smoothed', function (event) {
+
+	smoother.postMessage({ 'command': 'start', 'data': second_lap_test, 'bounds': [320, 160, 80, 40, 20], 'weights': [0.03, 0.07, 0.9] });
+	smoother.addEventListener('message', function (event) {
 		let coords = smoothed0_line.getAttribute('racing_line').coords;
-		coords.push(event.detail.point);
+		coords.push(event.data.point);
 		coords = coords.map(AFRAME.utils.coordinates.stringify);
 		coords = coords.join(', ');
 		smoothed0_line.setAttribute('racing_line', 'coords', coords);
-	}, false);
-	parser.smooth(second_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 15, window, 'smoothed');
+	});
+
+	//	Compute the smoothed racing line
+	// window.addEventListener('smoothed', function (event) {
+	// 	let coords = smoothed0_line.getAttribute('racing_line').coords;
+	// 	coords.push(event.detail.point);
+	// 	coords = coords.map(AFRAME.utils.coordinates.stringify);
+	// 	coords = coords.join(', ');
+	// 	smoothed0_line.setAttribute('racing_line', 'coords', coords);
+	// }, false);
+	// parser.smooth(second_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 15, window, 'smoothed');
 
 	// smoothed0_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[0]),
