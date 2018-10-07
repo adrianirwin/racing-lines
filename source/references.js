@@ -22,7 +22,7 @@ function log_to_point(point, log_row, device_profile, category, data_keys) {
 
 //	Instantiate a new device based on the named profile
 function device(profile_name) {
-	return Object.create(device_profiles[profile_name]);
+	return _.assign({}, device_profiles[profile_name]);
 }
 
 //	Structure of the stored log indicies

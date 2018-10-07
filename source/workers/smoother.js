@@ -2,7 +2,6 @@
 import * as _ from 'lodash';
 import * as THREE from 'three';
 
-//	Respond to message from parent thread
 self.addEventListener('message', (event) => {
 	const command = _.get(event, 'data.command', '');
 	switch (command) {

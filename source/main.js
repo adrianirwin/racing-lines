@@ -9,11 +9,11 @@ import './aframe/components';
 
 //	Web Workers
 import CSV_Parser from './workers/csv.js';
+import Formatter from './workers/formatter.js';
 import Smoother from './workers/smoother.js';
 
 //	Styles
 import './styles/main.scss';
-
 
 //	Globals
 const vr_ui_elements = [];
@@ -167,30 +167,77 @@ function data_input($input, callback) {
 	$input.on('change', function (event) {
 		const fileReader = new FileReader();
 		fileReader.onload = function () {
+			callback(window.atob(fileReader.result.split(',')[1]).replace(/"/g, ''));
 
-			let csv_parser = CSV_Parser();
-			let csv_parser_message = function (event) {
-				const command = _.get(event, 'data.command', '');
-				switch (command) {
-					case 'data':
-						const data = _.get(event, 'data.data.data', []);
-						csv_parser.removeEventListener('message', csv_parser_message);
-						csv_parser.terminate();
-						csv_parser = undefined;
-						csv_parser_message = undefined;
-						callback(data);
-				}
-			}
-
-			csv_parser.addEventListener('message', csv_parser_message);
-			csv_parser.postMessage({ 'command': 'start', 'csv': window.atob(fileReader.result.split(',')[1]).replace(/"/g, '') });
 		};
 		fileReader.readAsDataURL($input.prop('files')[0]);
 	});
 }
 
-function data_loaded(data) {
+function data_loaded(csv) {
 	window.console.log('data_loaded');
+
+	//	TEMP: Hard-code the device profile
+	//	TODO: Provide a selector widget
+	const device_profile = references.device('RaceCapture/Pro MK3');
+
+	//	Process all of the newly loaded data
+	new Promise((resolve, reject) => {
+
+		let csv_parser = CSV_Parser();
+		let csv_parser_message = function (event) {
+			const command = _.get(event, 'data.command', '');
+			switch (command) {
+				case 'data':
+					const data = _.get(event, 'data.data.data', []);
+					resolve(data);
+					break;
+				case 'terminate':
+					csv_parser.removeEventListener('message', csv_parser_message);
+					csv_parser.terminate();
+					csv_parser = undefined;
+					csv_parser_message = undefined;
+					break;
+			}
+		}
+
+		csv_parser.addEventListener('message', csv_parser_message);
+		csv_parser.postMessage({ 'command': 'start', 'csv': csv });
+
+	}).then(function(data) {
+
+		return new Promise((resolve, reject) => {
+
+			let formatter = Formatter();
+			let formatter_message = function (event) {
+				const command = _.get(event, 'data.command', '');
+				switch (command) {
+					case 'points':
+						const points = _.get(event, 'data.points', []);
+						resolve(points);
+						break;
+					case 'terminate':
+						formatter.removeEventListener('message', formatter_message);
+						formatter.terminate();
+						formatter = undefined;
+						formatter_message = undefined;
+						break;
+				}
+			}
+
+			formatter.addEventListener('message', formatter_message);
+			formatter.postMessage({ 'command': 'start', 'data': data, 'device_profile': device_profile });
+		});
+
+	}).then(function(points) { // (**)
+
+		render_racing_line(points);
+
+	});
+}
+
+function render_racing_line(racing_line_points) {
+	window.console.log('render_racing_line');
 
 	//	Select and create elements
 	const scene =					document.querySelector('a-scene');
@@ -215,12 +262,10 @@ function data_loaded(data) {
 	// scene.appendChild(smoothed5_points);
 	// scene.appendChild(smoothing_inspector);
 
-	//	TEMP: Hard-code the device profile
-	//	TODO: Provide a selector widget
-	const device_profile =			references.device('RaceCapture/Pro MK3');
+	
 
 	//	Parse the log data, and extract the lap boundaries
-	const racing_line_points =		parser.racing_line_points(data, device_profile);
+	// const racing_line_points =		parser.racing_line_points(data, device_profile);
 	const lap_boundaries =			parser.laps(racing_line_points);
 
 	//	Re-center the racing line data
@@ -282,7 +327,6 @@ function data_loaded(data) {
 		reorientation_quaternion: parser.vector_to_string(quaternion),
 		colour: '#FF66FF'
 	});
-
 
 	let smoother = new Smoother();
 	let smoother_message = function (event) {
@@ -377,12 +421,6 @@ function data_loaded(data) {
 	smoothed0_line.setAttribute('position', '0.0 1.0 -1.0');
 	racing_line.setAttribute('scale', '0.01 0.01 0.01');
 	smoothed0_line.setAttribute('scale', '0.01 0.01 0.01');
-}
-
-async function data_processing() {
-	window.console.log('data_processing');
-
-	parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9]);
 }
 
 //	Start the Application
