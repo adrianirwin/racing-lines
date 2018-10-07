@@ -13,7 +13,7 @@ self.addEventListener('message', (event) => {
 });
 
 self.smooth = function(data, bounds, weights, points = false) {
-	self.console.log('parser.smooth');
+	self.console.log('smoother.smooth');
 
 	// const smoothed_points_by_bounds = [];
 	// if (points === true) {
@@ -138,7 +138,7 @@ self.smooth = function(data, bounds, weights, points = false) {
 		// 	));
 		// }
 
-		self.postMessage({ 'point': smoothed_point, 'index': index, 'length': length });
+		self.postMessage({ 'command': 'point', 'point': smoothed_point, 'index': index, 'length': length });
 
 		//	Store point for returning as a separate data set
 		// if (points === true) {
@@ -166,7 +166,7 @@ self.smooth = function(data, bounds, weights, points = false) {
 		index_test++;
 	}
 
-	self.close();
+	self.postMessage({ 'command': 'terminate' });
 		// if (index_test >= length) {
 		// 	clearInterval(loop);
 		// }

@@ -13,6 +13,7 @@
 		"jquery": "^3.3.1",
 		"lodash": "^4.17.10",
 		"papaparse": "^4.6.0",
+		"remove-files-webpack-plugin": "^1.0.0",
 		"three": "^0.97.0"
 	},
 	"devDependencies": {

@@ -5,7 +5,7 @@ import * as ecef from 'geodetic-to-ecef';
 import * as references from './references';
 
 //	Parser settings
-function from_csv(csv, callback) {
+function from_csv(csv) {
 	window.console.log('parser.from_csv');
 
 	return Papa.parse(csv, {

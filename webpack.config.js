@@ -1,11 +1,12 @@
 const path = require('path');
 const webpack = require('webpack');
 const HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
+const RemovePlugin = require('remove-files-webpack-plugin');
 
 module.exports = {
 	cache: false,
 	mode: 'development',
-	devtool: "source-map",
+	devtool: 'source-map',
 	entry: './source/main.js',
 	output: {
 		filename: 'bundle.js',
@@ -31,8 +32,20 @@ module.exports = {
 		new webpack.ProvidePlugin({
 			$: 'jquery',
 			jQuery: 'jquery'
+		}),
+		new RemovePlugin({
+			before: {
+				allowRootAndOutside: true,
+				root: __dirname,
+				test: [
+					{
+						folder: 'dist',
+						method: (filePath) => {
+							return new RegExp(/worker\.js(\.map)?$/, 'igm').test(filePath);
+						}
+					}
+				]
+			}
 		})
 	]
 };
-
-	

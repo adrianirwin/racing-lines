@@ -8,14 +8,16 @@ import * as AFRAME from 'aframe';
 import './aframe/components';
 
 //	Web Workers
+import CSV_Parser from './workers/csv.js';
 import Smoother from './workers/smoother.js';
 
 //	Styles
 import './styles/main.scss';
 
 
+//	Globals
 const vr_ui_elements = [];
-const smoother = new Smoother();
+
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
@@ -165,7 +167,23 @@ function data_input($input, callback) {
 	$input.on('change', function (event) {
 		const fileReader = new FileReader();
 		fileReader.onload = function () {
-			callback(parser.from_csv(window.atob(fileReader.result.split(',')[1]).replace(/"/g, '')).data);
+
+			let csv_parser = CSV_Parser();
+			let csv_parser_message = function (event) {
+				const command = _.get(event, 'data.command', '');
+				switch (command) {
+					case 'data':
+						const data = _.get(event, 'data.data.data', []);
+						csv_parser.removeEventListener('message', csv_parser_message);
+						csv_parser.terminate();
+						csv_parser = undefined;
+						csv_parser_message = undefined;
+						callback(data);
+				}
+			}
+
+			csv_parser.addEventListener('message', csv_parser_message);
+			csv_parser.postMessage({ 'command': 'start', 'csv': window.atob(fileReader.result.split(',')[1]).replace(/"/g, '') });
 		};
 		fileReader.readAsDataURL($input.prop('files')[0]);
 	});
@@ -266,14 +284,27 @@ function data_loaded(data) {
 	});
 
 
+	let smoother = new Smoother();
+	let smoother_message = function (event) {
+		const command = _.get(event, 'data.command', '');
+		switch (command) {
+			case 'point':
+				let coords = smoothed0_line.getAttribute('racing_line').coords;
+				coords.push(event.data.point);
+				coords = coords.map(AFRAME.utils.coordinates.stringify);
+				coords = coords.join(', ');
+				smoothed0_line.setAttribute('racing_line', 'coords', coords);
+				break;
+			case 'terminate':
+				smoother.removeEventListener('message', smoother_message);
+				smoother.terminate();
+				smoother = undefined;
+				smoother_message = undefined;
+		}
+	}
+
+	smoother.addEventListener('message', smoother_message);
 	smoother.postMessage({ 'command': 'start', 'data': second_lap_test, 'bounds': [320, 160, 80, 40, 20], 'weights': [0.03, 0.07, 0.9] });
-	smoother.addEventListener('message', function (event) {
-		let coords = smoothed0_line.getAttribute('racing_line').coords;
-		coords.push(event.data.point);
-		coords = coords.map(AFRAME.utils.coordinates.stringify);
-		coords = coords.join(', ');
-		smoothed0_line.setAttribute('racing_line', 'coords', coords);
-	});
 
 	//	Compute the smoothed racing line
 	// window.addEventListener('smoothed', function (event) {
@@ -342,7 +373,7 @@ function data_loaded(data) {
 	// smoothed5_points.object3D.rotation.x += (-90 * (Math.PI / 180));
 	// smoothing_inspector.object3D.rotation.x += (-90 * (Math.PI / 180));
 
-	racing_line.setAttribute('position', '0.0 1.0 -1.0');
+	racing_line.setAttribute('position', '0.0 0.99 -1.0');
 	smoothed0_line.setAttribute('position', '0.0 1.0 -1.0');
 	racing_line.setAttribute('scale', '0.01 0.01 0.01');
 	smoothed0_line.setAttribute('scale', '0.01 0.01 0.01');
