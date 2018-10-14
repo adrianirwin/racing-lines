@@ -228,6 +228,148 @@ AFRAME.registerComponent('racing_line', {
 	}
 });
 
+AFRAME.registerComponent('line_graph', {
+	schema: {
+		value_colour: {
+			type: 'color', default: '#FFE260'
+		},
+		fill_colour: {
+			type: 'color', default: '#E5C167'
+		},
+		floor_coords: {
+			parse: function (value) {
+				if (_.isEmpty(value) === false && _.isString(value) === true) {
+					return value.split(',').map(AFRAME.utils.coordinates.parse);
+				} else {
+					return [];
+				}
+			},
+			default: [
+				{x:  1, y: 0, z:  0},
+				{x: -1, y: 0, z:  0},
+				{x:  0, y: 0, z:  1},
+				{x:  0, y: 0, z: -1}
+			]
+		},
+		value_coords: {
+			parse: function (value) {
+				if (_.isEmpty(value) === false && _.isString(value) === true) {
+					return value.split(',').map(AFRAME.utils.coordinates.parse);
+				} else {
+					return [];
+				}
+			},
+			default: [
+				{x:  1, y: 0, z:  0},
+				{x: -1, y: 0, z:  0},
+				{x:  0, y: 0, z:  1},
+				{x:  0, y: 0, z: -1}
+			]
+		},
+		length: {
+			type: 'number', default: 0
+		},
+		reorientation_quaternion: {
+			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0}
+		}
+	},
+
+	init: function () {
+		const self = this;
+
+		//	Materials
+		self.value_material = new THREE.LineBasicMaterial({ color: self.data.value_colour });
+		// self.fill_material = new THREE.MeshBasicMaterial({ color: self.data.value_colour, transparent: true, opacity: 0.5 });
+
+		//	Geometry
+		self.value_geometry = new THREE.BufferGeometry();
+		// self.fill_geometry = new THREE.BufferGeometry();
+
+		//	There seems to be something amiss with the update call that causes it to miss every other addition
+		self.point_count = 0;
+
+		self.value_positions = new Float32Array(self.data.length * 3);
+		self.value_geometry.addAttribute('position', new THREE.BufferAttribute(self.value_positions, 3));
+		self.value_geometry.setDrawRange(0, self.data.value_coords.length);
+
+		// self.fill_positions = new Float32Array(self.data.length * 3);
+		// self.fill_geometry.addAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
+		// self.fill_geometry.setDrawRange(0, self.data.floor_coords.length);
+
+		//	Create the value line
+		self.value_line = new THREE.Line(self.value_geometry, self.value_material);
+		self.el.setObject3D('value_line', self.value_line);
+
+		//	Plot value line vertices
+		self.data.value_coords.forEach((point, index) => {
+			const position = (index * 3);
+
+			self.value_positions[(position)] = point.x;
+			self.value_positions[(position + 1)] = point.y;
+			self.value_positions[(position + 2)] = point.z;
+
+			self.point_count++;
+		});
+
+		//	The original GPS data is stored as lat/long, after
+		//	converting to cartesian coordinates, the 'up' vector is
+		//	still correct in 'globe' space. This applies the calculated
+		//	rotation transformation to the racing line geometry,
+		//	so 'up' for subsequent operations is now Z+.
+		const rotation_matrix = new THREE.Matrix4();
+		const reorientation_quaternion = new THREE.Quaternion(
+			self.data.reorientation_quaternion.x,
+			self.data.reorientation_quaternion.y,
+			self.data.reorientation_quaternion.z,
+			self.data.reorientation_quaternion.w
+		);
+		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
+		self.value_geometry.applyMatrix(rotation_matrix);	
+		// self.fill_geometry.applyMatrix(rotation_matrix);	
+	},
+
+	update: function (oldData) {
+		const self = this;
+
+		if (
+			_.isEmpty(oldData.value_coords) === false
+			&& _.isEmpty(self.data.value_coords) === false
+		) {
+			const diff = self.data.value_coords.slice(self.point_count);
+			const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
+
+			_.forEach(diff, (point, index) => {
+				const vertex = new THREE.Vector3(point.x, point.y, point.z);
+				const reorientation_quaternion = new THREE.Quaternion(
+					self.data.reorientation_quaternion.x,
+					self.data.reorientation_quaternion.y,
+					self.data.reorientation_quaternion.z,
+					self.data.reorientation_quaternion.w
+				);
+				vertex.applyQuaternion(reorientation_quaternion);
+
+				const position = (self.point_count * 3);
+
+				self.value_positions[(position)] = vertex.x;
+				self.value_positions[(position + 1)] = vertex.y;
+				self.value_positions[(position + 2)] = vertex.z;
+
+				self.point_count++;
+			});
+
+			self.value_geometry.setDrawRange(0, self.point_count);
+			self.value_geometry.attributes.position.needsUpdate = true;
+			self.value_geometry.computeBoundingSphere();
+		}
+	},
+
+	remove: function () {
+		const self = this;
+
+		self.el.removeObject3D('racing_line');
+	}
+});
+
 AFRAME.registerComponent('racing_dots', {
 	schema: {
 		colour: {

@@ -11,20 +11,10 @@ self.addEventListener('message', (event) => {
 	}
 });
 
-self.smooth = function(data, bounds, weights, points = false) {
+self.smooth = function(data, bounds, weights) {
 	self.console.log('smoother.smooth');
 
-	// const smoothed_points_by_bounds = [];
-	// if (points === true) {
-	// 	bounds.forEach(function () {
-	// 		smoothed_points_by_bounds.push([]);
-	// 	});
-	// 	smoothed_points_by_bounds.push([]);
-	// }
-
 	//	Iterate on each point in the racing line
-	// data.forEach(function (point, index) {
-	// const smooth_by_averages = function (data, point, index, length, listener, event_name) {
 	const smooth_by_averages = function (data, point, index, length) {
 		const averaged_points = [];
 
@@ -37,7 +27,7 @@ self.smooth = function(data, bounds, weights, points = false) {
 			//	between GPS points and the bounding counts that is
 			//	not well understood at the moment.
 			const bound = Math.min(max_bound, index, (data.length - index));
-			const average_point = {'x': 0, 'y': 0, 'z': 0};
+			const average_point = { 'x': 0, 'y': 0, 'z': 0 };
 
 			if (bound > 0) {
 				const points_to_average = data.slice((index - bound), (index + bound));
@@ -57,9 +47,6 @@ self.smooth = function(data, bounds, weights, points = false) {
 				average_point.z = _.get(point, 'coordinates.cartesian.raw.z');
 			}
 			averaged_points.push(average_point);
-			if (points === true) {
-				smoothed_points_by_bounds[bound_i].push(average_point);
-			}
 		});
 
 		//	Convert to Vector3 to use some of the built-in methods
@@ -128,46 +115,23 @@ self.smooth = function(data, bounds, weights, points = false) {
 			'z': final_vector.z
 		};
 
-		//	Broadcast the new point
-		// if (_.isNull(listener) === false && _.isNull(event_name) === false) {
-		// 	listener.dispatchEvent(new CustomEvent('smoothed', {
-		// 		'detail': {
-		// 			'point': smoothed_point, 'index': index, 'length': length }
-		// 		}
-		// 	));
-		// }
-
-		self.postMessage({ 'command': 'point', 'point': smoothed_point, 'index': index, 'length': length });
-
-		//	Store point for returning as a separate data set
-		// if (points === true) {
-		// 	_.last(smoothed_points_by_bounds).push(smoothed_point)
-		// }
-
 		//	Update the input data set
-		// _.set(data, '[' + index + '].coordinates.cartesian.smoothed', smoothed_point);
 		return smoothed_point;
 	}
-	// });
 
-	// if (points === true) {
-	// 	return smoothed_points_by_bounds;
-	// }
-
-	var smoothed_points = [];
 	const temp_data = JSON.stringify(data);
 	var cloned_data = JSON.parse(temp_data);
 	var cloned_data_for_points = JSON.parse(temp_data);
-	// const loop = setInterval(() => {
-		// smoothed_points.push(smooth_by_averages(cloned_data, cloned_data_for_points.shift(), index_test, length, listener, event_name));
-	for (var index_test = 0, length = data.length; index_test < length;) {
-		smoothed_points.push(smooth_by_averages(cloned_data, cloned_data_for_points.shift(), index_test, length));
-		index_test++;
+
+	for (let index = 0, length = data.length; index < length;) {
+		self.postMessage({
+			'command': 'point',
+			'point': smooth_by_averages(cloned_data, cloned_data_for_points.shift(), index, length),
+			'index': index,
+			'length': length
+		});
+		index++;
 	}
 
 	self.postMessage({ 'command': 'terminate' });
-		// if (index_test >= length) {
-		// 	clearInterval(loop);
-		// }
-	// }, interval);
 }

@@ -1,8 +1,9 @@
 //	Libraries
+import * as AFRAME from 'aframe';
 import * as _ from 'lodash';
 import * as parser from './parser';
 import * as references from './references';
-import * as AFRAME from 'aframe';
+import * as utilities from './utilities';
 
 //	Custom A-Frame Components
 import './aframe/components';
@@ -11,6 +12,7 @@ import './aframe/components';
 import CSV_Parser from './workers/csv.js';
 import Formatter from './workers/formatter.js';
 import Smoother from './workers/smoother.js';
+import Grapher from './workers/grapher.js';
 
 //	Styles
 import './styles/main.scss';
@@ -183,7 +185,6 @@ function data_loaded(csv) {
 
 	//	Process all of the newly loaded data
 	new Promise((resolve, reject) => {
-
 		let csv_parser = CSV_Parser();
 		let csv_parser_message = function (event) {
 			const command = _.get(event, 'data.command', '');
@@ -193,10 +194,7 @@ function data_loaded(csv) {
 					resolve(data);
 					break;
 				case 'terminate':
-					csv_parser.removeEventListener('message', csv_parser_message);
-					csv_parser.terminate();
-					csv_parser = undefined;
-					csv_parser_message = undefined;
+					utilities.clean_up_worker(csv_parser, csv_parser_message, 'message');
 					break;
 			}
 		}
@@ -207,7 +205,6 @@ function data_loaded(csv) {
 	}).then(function(data) {
 
 		return new Promise((resolve, reject) => {
-
 			let formatter = Formatter();
 			let formatter_message = function (event) {
 				const command = _.get(event, 'data.command', '');
@@ -217,10 +214,7 @@ function data_loaded(csv) {
 						resolve(points);
 						break;
 					case 'terminate':
-						formatter.removeEventListener('message', formatter_message);
-						formatter.terminate();
-						formatter = undefined;
-						formatter_message = undefined;
+						utilities.clean_up_worker(formatter, formatter_message, 'message');
 						break;
 				}
 			}
@@ -229,7 +223,7 @@ function data_loaded(csv) {
 			formatter.postMessage({ 'command': 'start', 'data': data, 'device_profile': device_profile });
 		});
 
-	}).then(function(points) { // (**)
+	}).then(function(points) {
 
 		render_racing_line(points);
 
@@ -239,10 +233,14 @@ function data_loaded(csv) {
 function render_racing_line(racing_line_points) {
 	window.console.log('render_racing_line');
 
+	//	TODO: Set dynamically/allow user input?
+	const scaling_factor =			0.01;
+
 	//	Select and create elements
 	const scene =					document.querySelector('a-scene');
 	const racing_line =				document.createElement('a-entity');
-	const smoothed0_line =			document.createElement('a-entity');
+	const raw_line =				document.createElement('a-entity');
+	const smoothed_line =			document.createElement('a-entity');
 	// const smoothed0_points =		document.createElement('a-entity');
 	// const smoothed1_points =		document.createElement('a-entity');
 	// const smoothed2_points =		document.createElement('a-entity');
@@ -252,8 +250,9 @@ function render_racing_line(racing_line_points) {
 	// const smoothing_inspector =		document.createElement('a-entity');
 
 	//	Place the racing line in the scene
+	racing_line.appendChild(raw_line);
+	racing_line.appendChild(smoothed_line);
 	scene.appendChild(racing_line);
-	scene.appendChild(smoothed0_line);
 	// scene.appendChild(smoothed0_points);
 	// scene.appendChild(smoothed1_points);
 	// scene.appendChild(smoothed2_points);
@@ -261,6 +260,14 @@ function render_racing_line(racing_line_points) {
 	// scene.appendChild(smoothed4_points);
 	// scene.appendChild(smoothed5_points);
 	// scene.appendChild(smoothing_inspector);
+
+	//	TODO: Replace with swizzle function to set correct Z?
+	racing_line.object3D.rotation.x += (-90 * (Math.PI / 180));
+	racing_line.setAttribute('scale', (scaling_factor + ' ' + scaling_factor + ' ' + scaling_factor));
+	racing_line.setAttribute('position', '0.0 1.0 -1.0');
+	racing_line.setAttribute('id', 'racing_line');
+
+	raw_line.setAttribute('position', '0.0 0.0 -1.0');
 
 	
 
@@ -297,7 +304,7 @@ function render_racing_line(racing_line_points) {
 	//	 - cross product along which to rotate to translate from one to the other
 	const v3_to_center =			new THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2]);
 	const v3_to_north_pole =		new THREE.Vector3(vector_to_north_pole[0], vector_to_north_pole[1], vector_to_north_pole[2]);
-	var v3_cross =					new THREE.Vector3(0, 0, 0);
+	let v3_cross =					new THREE.Vector3(0, 0, 0);
 
 	//	Compute the cross product
 	v3_cross.crossVectors(v3_to_center, v3_to_north_pole);
@@ -307,92 +314,108 @@ function render_racing_line(racing_line_points) {
 	const angle =					v3_to_center.angleTo(v3_to_north_pole);
 
 	//	Quaternion describing the rotation
-	var quaternion =				new THREE.Quaternion();
-	quaternion.setFromAxisAngle(v3_cross, angle);
+	var reorientation_quaternion =	new THREE.Quaternion();
+	reorientation_quaternion.setFromAxisAngle(v3_cross, angle);
 
-	//	Assign data to the racing line
-	racing_line.setAttribute('racing_line', {
+
+	//	Assign the racing line component to the raw and smoother line entities
+	raw_line.setAttribute('racing_line', {
 		// coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.raw'),
 		coords: parser.coords_to_string(second_lap_test, 'coordinates.cartesian.raw'),
 		lap_boundaries: parser.laps_to_string(lap_boundaries),
 		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
-		reorientation_quaternion: parser.vector_to_string(quaternion)
+		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	});
 
-	smoothed0_line.setAttribute('racing_line', {
+	smoothed_line.setAttribute('racing_line', {
 		// coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.smoothed'),
 		coords: '',
 		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
 		length: second_lap_test.length,
-		reorientation_quaternion: parser.vector_to_string(quaternion),
+		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 		colour: '#FF66FF'
 	});
 
+
+	//	Run smoothing algorithm on current lap
 	let smoother = new Smoother();
 	let smoother_message = function (event) {
 		const command = _.get(event, 'data.command', '');
 		switch (command) {
 			case 'point':
-				let coords = smoothed0_line.getAttribute('racing_line').coords;
-				coords.push(event.data.point);
+				const point = _.get(event, 'data.point', { x: 0, y: 0, z: 0 });
+
+				//	"Grow" the smoothed line
+				let coords = smoothed_line.getAttribute('racing_line').coords;
+				coords.push(point);
 				coords = coords.map(AFRAME.utils.coordinates.stringify);
 				coords = coords.join(', ');
-				smoothed0_line.setAttribute('racing_line', 'coords', coords);
+				smoothed_line.setAttribute('racing_line', 'coords', coords);
+
+				//	Update the existing dataset
+				_.set(second_lap_test, '[' + _.get(event, 'data.index', 0) + '].coordinates.cartesian.smoothed', point);
+
 				break;
 			case 'terminate':
-				smoother.removeEventListener('message', smoother_message);
-				smoother.terminate();
-				smoother = undefined;
-				smoother_message = undefined;
+				utilities.clean_up_worker(smoother, smoother_message, 'message');
+
+				//	TODO: Should probably wrap this all up in a big fat promise
+				render_graphs(second_lap_test, v3_to_center, reorientation_quaternion);
+
+				break;
 		}
 	}
-
 	smoother.addEventListener('message', smoother_message);
-	smoother.postMessage({ 'command': 'start', 'data': second_lap_test, 'bounds': [320, 160, 80, 40, 20], 'weights': [0.03, 0.07, 0.9] });
+	smoother.postMessage({
+		'command': 'start',
+		'data': second_lap_test,
+		'bounds': [320, 160, 80, 40, 20],
+		'weights': [0.03, 0.07, 0.9]
+	});
 
 	//	Compute the smoothed racing line
 	// window.addEventListener('smoothed', function (event) {
-	// 	let coords = smoothed0_line.getAttribute('racing_line').coords;
+	// 	let coords = smoothed_line.getAttribute('racing_line').coords;
 	// 	coords.push(event.detail.point);
 	// 	coords = coords.map(AFRAME.utils.coordinates.stringify);
 	// 	coords = coords.join(', ');
-	// 	smoothed0_line.setAttribute('racing_line', 'coords', coords);
+	// 	smoothed_line.setAttribute('racing_line', 'coords', coords);
 	// }, false);
 	// parser.smooth(second_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 15, window, 'smoothed');
 
 	// smoothed0_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[0]),
-	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 	// 	colour: '#880000'
 	// });
 
 	// smoothed1_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[1]),
-	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 	// 	colour: '#BB0044'
 	// });
 
 	// smoothed2_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[2]),
-	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 	// 	colour: '#FF0088'
 	// });
 
 	// smoothed3_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[3]),
-	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 	// 	colour: '#FF44BB'
 	// });
 
 	// smoothed4_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[4]),
-	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 	// 	colour: '#FF88FF'
 	// });
 
 	// smoothed5_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[5]),
-	// 	reorientation_quaternion: parser.vector_to_string(quaternion),
+	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 	// 	colour: '#FFFFFF'
 	// });
 
@@ -403,24 +426,56 @@ function render_racing_line(racing_line_points) {
 	// 	coords3: parser.coords_to_string(smoothed_points[3]),
 	// 	coords4: parser.coords_to_string(smoothed_points[4]),
 	// 	coords5: parser.coords_to_string(smoothed_points[5]),
-	// 	reorientation_quaternion: parser.vector_to_string(quaternion)
+	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	// });
+}
 
-	//	TODO: Replace with swizzle function to set correct Z?
-	racing_line.object3D.rotation.x += (-90 * (Math.PI / 180));
-	smoothed0_line.object3D.rotation.x += (-90 * (Math.PI / 180));
-	// smoothed0_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	// smoothed1_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	// smoothed2_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	// smoothed3_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	// smoothed4_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	// smoothed5_points.object3D.rotation.x += (-90 * (Math.PI / 180));
-	// smoothing_inspector.object3D.rotation.x += (-90 * (Math.PI / 180));
 
-	racing_line.setAttribute('position', '0.0 0.99 -1.0');
-	smoothed0_line.setAttribute('position', '0.0 1.0 -1.0');
-	racing_line.setAttribute('scale', '0.01 0.01 0.01');
-	smoothed0_line.setAttribute('scale', '0.01 0.01 0.01');
+function render_graphs(lap_points, up_vector, reorientation_quaternion) {
+	window.console.log('render_graphs');
+
+	const racing_line =				document.querySelector('#racing_line');
+	const graphed_line =			document.createElement('a-entity');
+
+	racing_line.appendChild(graphed_line);
+
+	//	Assign the line graph component
+	graphed_line.setAttribute('line_graph', {
+		value_coords: '',
+		length: lap_points.length,
+		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
+	});
+
+	//	Run smoothing algorithm on current lap
+	let grapher = new Grapher();
+	let grapher_message = function (event) {
+		const command = _.get(event, 'data.command', '');
+		switch (command) {
+			case 'point':
+				const point = _.get(event, 'data.point', { x: 0, y: 0, z: 0 });
+
+				//	"Grow" the graphed line
+				let coords = graphed_line.getAttribute('line_graph').value_coords;
+				coords.push(point);
+				coords = coords.map(AFRAME.utils.coordinates.stringify);
+				coords = coords.join(', ');
+				graphed_line.setAttribute('line_graph', 'value_coords', coords);
+
+				break;
+			case 'terminate':
+				utilities.clean_up_worker(grapher, grapher_message, 'message');
+				break;
+		}
+	}
+	grapher.addEventListener('message', grapher_message);
+	grapher.postMessage({
+		'command': 'start',
+		'data': lap_points,
+		'floor_path': 'coordinates.cartesian.smoothed',
+		'value_path': 'performance.speed',
+		'up_vector': up_vector,
+		'scale': 0.3
+	});
 }
 
 //	Start the Application
