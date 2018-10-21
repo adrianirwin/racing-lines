@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import * as parser from './parser';
 import * as references from './references';
 import * as utilities from './utilities';
+import * as graphs from './graphs';
 
 //	Custom A-Frame Components
 import './aframe/components';
@@ -19,7 +20,6 @@ import './styles/main.scss';
 
 //	Globals
 const vr_ui_elements = [];
-
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
@@ -430,7 +430,6 @@ function render_racing_line(racing_line_points) {
 	// });
 }
 
-
 function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 	window.console.log('render_graphs');
 
@@ -473,8 +472,9 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		'data': lap_points,
 		'floor_path': 'coordinates.cartesian.smoothed',
 		'value_path': 'performance.speed',
-		'up_vector': up_vector,
-		'scale': 0.3
+		'scale': 0.3,
+		'up_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
+		'value_function': 'vertical_line'
 	});
 }
 
