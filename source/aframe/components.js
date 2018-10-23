@@ -230,28 +230,10 @@ AFRAME.registerComponent('racing_line', {
 
 AFRAME.registerComponent('line_graph', {
 	schema: {
-		value_colour: {
+		colour: {
 			type: 'color', default: '#FFE260'
 		},
-		fill_colour: {
-			type: 'color', default: '#E5C167'
-		},
-		floor_coords: {
-			parse: function (value) {
-				if (_.isEmpty(value) === false && _.isString(value) === true) {
-					return value.split(',').map(AFRAME.utils.coordinates.parse);
-				} else {
-					return [];
-				}
-			},
-			default: [
-				{x:  1, y: 0, z:  0},
-				{x: -1, y: 0, z:  0},
-				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
-		},
-		value_coords: {
+		coords: {
 			parse: function (value) {
 				if (_.isEmpty(value) === false && _.isString(value) === true) {
 					return value.split(',').map(AFRAME.utils.coordinates.parse);
@@ -278,30 +260,24 @@ AFRAME.registerComponent('line_graph', {
 		const self = this;
 
 		//	Materials
-		self.value_material = new THREE.LineBasicMaterial({ color: self.data.value_colour });
-		// self.fill_material = new THREE.MeshBasicMaterial({ color: self.data.value_colour, transparent: true, opacity: 0.5 });
+		self.value_material = new THREE.LineBasicMaterial({ color: self.data.colour });
 
 		//	Geometry
 		self.value_geometry = new THREE.BufferGeometry();
-		// self.fill_geometry = new THREE.BufferGeometry();
 
 		//	There seems to be something amiss with the update call that causes it to miss every other addition
 		self.point_count = 0;
 
 		self.value_positions = new Float32Array(self.data.length * 3);
 		self.value_geometry.addAttribute('position', new THREE.BufferAttribute(self.value_positions, 3));
-		self.value_geometry.setDrawRange(0, self.data.value_coords.length);
-
-		// self.fill_positions = new Float32Array(self.data.length * 3);
-		// self.fill_geometry.addAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
-		// self.fill_geometry.setDrawRange(0, self.data.floor_coords.length);
+		self.value_geometry.setDrawRange(0, self.data.coords.length);
 
 		//	Create the value line
 		self.value_line = new THREE.Line(self.value_geometry, self.value_material);
 		self.el.setObject3D('value_line', self.value_line);
 
 		//	Plot value line vertices
-		self.data.value_coords.forEach((point, index) => {
+		self.data.coords.forEach((point, index) => {
 			const position = (index * 3);
 
 			self.value_positions[(position)] = point.x;
@@ -324,18 +300,17 @@ AFRAME.registerComponent('line_graph', {
 			self.data.reorientation_quaternion.w
 		);
 		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
-		self.value_geometry.applyMatrix(rotation_matrix);	
-		// self.fill_geometry.applyMatrix(rotation_matrix);	
+		self.value_geometry.applyMatrix(rotation_matrix);
 	},
 
 	update: function (oldData) {
 		const self = this;
 
 		if (
-			_.isEmpty(oldData.value_coords) === false
-			&& _.isEmpty(self.data.value_coords) === false
+			_.isEmpty(oldData.coords) === false
+			&& _.isEmpty(self.data.coords) === false
 		) {
-			const diff = self.data.value_coords.slice(self.point_count);
+			const diff = self.data.coords.slice(self.point_count);
 			const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
 
 			_.forEach(diff, (point, index) => {
@@ -360,6 +335,139 @@ AFRAME.registerComponent('line_graph', {
 			self.value_geometry.setDrawRange(0, self.point_count);
 			self.value_geometry.attributes.position.needsUpdate = true;
 			self.value_geometry.computeBoundingSphere();
+			self.value_geometry.computeBoundingBox();
+		}
+	},
+
+	remove: function () {
+		const self = this;
+
+		self.el.removeObject3D('racing_line');
+	}
+});
+
+AFRAME.registerComponent('filled_graph', {
+	schema: {
+		colour: {
+			type: 'color', default: '#E5C167'
+		},
+		coords: {
+			parse: function (value) {
+				if (_.isEmpty(value) === false && _.isString(value) === true) {
+					return value.split(',').map(AFRAME.utils.coordinates.parse);
+				} else {
+					return [];
+				}
+			},
+			default: [
+				{x:  1, y: 0, z:  0},
+				{x:  1, y: 0, z:  1},
+				{x: -1, y: 0, z:  0},
+				{x: -1, y: 0, z:  1},
+				{x: -1, y: 0, z:  0},
+				{x:  1, y: 0, z:  1}
+			]
+		},
+		length: {
+			type: 'number', default: 0
+		},
+		reorientation_quaternion: {
+			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0}
+		}
+	},
+
+	init: function () {
+		const self = this;
+
+		//	Materials
+		self.fill_material = new THREE.MeshBasicMaterial({ color: self.data.colour, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+
+		//	Geometry
+		self.fill_geometry = new THREE.BufferGeometry();
+
+		//	There seems to be something amiss with the update call that causes it to miss every other addition
+		self.point_count = 0;
+
+		self.fill_positions = new Float32Array(self.data.length * 6);
+		self.fill_geometry.addAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
+
+		self.fill_indicies = new Uint32Array((self.data.length - 1) * 6);
+		for (let i = 0, l = (self.data.length - 1); i < l; i++) {
+			self.fill_indicies[((i * 6) + 0)] = ((i * 2) + 0);
+			self.fill_indicies[((i * 6) + 1)] = ((i * 2) + 1);
+			self.fill_indicies[((i * 6) + 2)] = ((i * 2) + 2);
+			self.fill_indicies[((i * 6) + 3)] = ((i * 2) + 3);
+			self.fill_indicies[((i * 6) + 4)] = ((i * 2) + 2);
+			self.fill_indicies[((i * 6) + 5)] = ((i * 2) + 1);
+		}
+		self.fill_geometry.setIndex(new THREE.BufferAttribute(self.fill_indicies, 1));
+
+		self.fill_geometry.setDrawRange(0, (self.data.coords.length * 2));
+
+		//	Create the filled surface
+		self.filled_surface = new THREE.Mesh(self.fill_geometry, self.fill_material);
+		self.el.setObject3D('filled_surface', self.filled_surface);
+
+		//	Plot value filled surface vertices
+		self.data.coords.forEach((point, index) => {
+			const position = (index * 3);
+
+			self.fill_positions[(position)] = point.x;
+			self.fill_positions[(position + 1)] = point.y;
+			self.fill_positions[(position + 2)] = point.z;
+
+			self.point_count++;
+		});
+
+		//	The original GPS data is stored as lat/long, after
+		//	converting to cartesian coordinates, the 'up' vector is
+		//	still correct in 'globe' space. This applies the calculated
+		//	rotation transformation to the racing line geometry,
+		//	so 'up' for subsequent operations is now Z+.
+		const rotation_matrix = new THREE.Matrix4();
+		const reorientation_quaternion = new THREE.Quaternion(
+			self.data.reorientation_quaternion.x,
+			self.data.reorientation_quaternion.y,
+			self.data.reorientation_quaternion.z,
+			self.data.reorientation_quaternion.w
+		);
+		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
+		self.fill_geometry.applyMatrix(rotation_matrix);
+	},
+
+	update: function (oldData) {
+		const self = this;
+
+		if (
+			_.isEmpty(oldData.coords) === false
+			&& _.isEmpty(self.data.coords) === false
+		) {
+			const diff = self.data.coords.slice(self.point_count);
+			const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
+
+			_.forEach(diff, (point, index) => {
+				const vertex = new THREE.Vector3(point.x, point.y, point.z);
+				const reorientation_quaternion = new THREE.Quaternion(
+					self.data.reorientation_quaternion.x,
+					self.data.reorientation_quaternion.y,
+					self.data.reorientation_quaternion.z,
+					self.data.reorientation_quaternion.w
+				);
+				vertex.applyQuaternion(reorientation_quaternion);
+
+				const position = (self.point_count * 3);
+
+				self.fill_positions[(position)] = vertex.x;
+				self.fill_positions[(position + 1)] = vertex.y;
+				self.fill_positions[(position + 2)] = vertex.z;
+
+				self.point_count++;
+			});
+
+			self.fill_geometry.setDrawRange(0, (((self.point_count - 2) * 3) - (((self.point_count - 2) * 3) % 3)));
+			self.fill_geometry.attributes.position.needsUpdate = true;
+			self.fill_geometry.computeBoundingSphere();
+			self.fill_geometry.computeBoundingBox();
 		}
 	},
 

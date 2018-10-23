@@ -286,6 +286,12 @@ function render_racing_line(racing_line_points) {
 	const first_lap =				racing_line_points.slice(0, lap_boundaries[0]);
 	const first_lap_test =			racing_line_points.slice(0, lap_boundaries[0]);
 	const second_lap_test =			racing_line_points.slice(lap_boundaries[1], lap_boundaries[2]);
+	// const second_lap_test =			racing_line_points.slice(
+	// 	lap_boundaries[1],
+	// 	Math.round(
+	// 		(lap_boundaries[1]) + ((lap_boundaries[2] - lap_boundaries[1]) * 0.05)
+	// 	)
+	// );
 
 	//	Smooth the raw cartesian points
 	// window.addEventListener('smoothed', function (event) {
@@ -439,8 +445,14 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 	racing_line.appendChild(graphed_line);
 
 	//	Assign the line graph component
+	graphed_line.setAttribute('filled_graph', {
+		coords: '',
+		length: lap_points.length,
+		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
+	});
+
 	graphed_line.setAttribute('line_graph', {
-		value_coords: '',
+		coords: '',
 		length: lap_points.length,
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	});
@@ -451,14 +463,24 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		const command = _.get(event, 'data.command', '');
 		switch (command) {
 			case 'point':
-				const point = _.get(event, 'data.point', { x: 0, y: 0, z: 0 });
+				const value_point = _.get(event, 'data.points.value', { x: 0, y: 0, z: 0 });
+				const floor_point = _.get(event, 'data.points.floor', { x: 0, y: 0, z: 0 });
 
 				//	"Grow" the graphed line
-				let coords = graphed_line.getAttribute('line_graph').value_coords;
-				coords.push(point);
-				coords = coords.map(AFRAME.utils.coordinates.stringify);
-				coords = coords.join(', ');
-				graphed_line.setAttribute('line_graph', 'value_coords', coords);
+				let filled_coords = graphed_line.getAttribute('filled_graph').coords;
+				let line_coords = graphed_line.getAttribute('line_graph').coords;
+
+				filled_coords.push(floor_point);
+				filled_coords.push(value_point);
+				filled_coords = filled_coords.map(AFRAME.utils.coordinates.stringify);
+				filled_coords = filled_coords.join(', ');
+
+				line_coords.push(value_point);
+				line_coords = line_coords.map(AFRAME.utils.coordinates.stringify);
+				line_coords = line_coords.join(', ');
+
+				graphed_line.setAttribute('filled_graph', 'coords', filled_coords);
+				graphed_line.setAttribute('line_graph', 'coords', line_coords);
 
 				break;
 			case 'terminate':
@@ -473,8 +495,8 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		'floor_path': 'coordinates.cartesian.smoothed',
 		'value_path': 'performance.speed',
 		'scale': 0.3,
-		'up_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
-		'value_function': 'vertical_line'
+		'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
+		'value_function': graphs.offset_fill.name
 	});
 }
 

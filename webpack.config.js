@@ -6,6 +6,7 @@ const RemovePlugin = require('remove-files-webpack-plugin');
 module.exports = {
 	cache: false,
 	mode: 'development',
+	// mode: 'production',
 	devtool: 'source-map',
 	entry: './source/main.js',
 	output: {
