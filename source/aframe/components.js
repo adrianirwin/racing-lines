@@ -311,7 +311,7 @@ AFRAME.registerComponent('line_graph', {
 			&& _.isEmpty(self.data.coords) === false
 		) {
 			const diff = self.data.coords.slice(self.point_count);
-			const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
+			// const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
 
 			_.forEach(diff, (point, index) => {
 				const vertex = new THREE.Vector3(point.x, point.y, point.z);
@@ -443,7 +443,7 @@ AFRAME.registerComponent('filled_graph', {
 			&& _.isEmpty(self.data.coords) === false
 		) {
 			const diff = self.data.coords.slice(self.point_count);
-			const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
+			// const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
 
 			_.forEach(diff, (point, index) => {
 				const vertex = new THREE.Vector3(point.x, point.y, point.z);

@@ -349,17 +349,18 @@ function render_racing_line(racing_line_points) {
 		const command = _.get(event, 'data.command', '');
 		switch (command) {
 			case 'point':
-				const point = _.get(event, 'data.point', { x: 0, y: 0, z: 0 });
+				const smoothed_points = _.get(event, 'data.points', [{ x: 0, y: 0, z: 0 }]);
 
-				//	"Grow" the smoothed line
 				let coords = smoothed_line.getAttribute('racing_line').coords;
-				coords.push(point);
+				coords = _.concat(coords, smoothed_points);
 				coords = coords.map(AFRAME.utils.coordinates.stringify);
 				coords = coords.join(', ');
 				smoothed_line.setAttribute('racing_line', 'coords', coords);
 
 				//	Update the existing dataset
-				_.set(second_lap_test, '[' + _.get(event, 'data.index', 0) + '].coordinates.cartesian.smoothed', point);
+				for (let index = 0, length = smoothed_points.length; index < length; index++) {
+					_.set(second_lap_test, '[' + (_.get(event, 'data.index', 0) + index) + '].coordinates.cartesian.smoothed', smoothed_points[index]);
+				}
 
 				break;
 			case 'terminate':
@@ -376,7 +377,8 @@ function render_racing_line(racing_line_points) {
 		'command': 'start',
 		'data': second_lap_test,
 		'bounds': [320, 160, 80, 40, 20],
-		'weights': [0.03, 0.07, 0.9]
+		'weights': [0.03, 0.07, 0.9],
+		'steps': 100
 	});
 
 	//	Compute the smoothed racing line
@@ -463,19 +465,25 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		const command = _.get(event, 'data.command', '');
 		switch (command) {
 			case 'point':
-				const value_point = _.get(event, 'data.points.value', { x: 0, y: 0, z: 0 });
-				const floor_point = _.get(event, 'data.points.floor', { x: 0, y: 0, z: 0 });
+				const value_points = _.get(event, 'data.points.values', [{ x: 0, y: 0, z: 0 }]);
+				const floor_points = _.get(event, 'data.points.floors', [{ x: 0, y: 0, z: 0 }]);
 
 				//	"Grow" the graphed line
 				let filled_coords = graphed_line.getAttribute('filled_graph').coords;
 				let line_coords = graphed_line.getAttribute('line_graph').coords;
 
-				filled_coords.push(floor_point);
-				filled_coords.push(value_point);
+				//	Set the order of the points for the filled surface
+				const ordered_points = [];
+				for (let index = 0, length = value_points.length; index < length; index++) {
+					ordered_points.push(floor_points[index]);
+					ordered_points.push(value_points[index]);
+				}
+
+				filled_coords = _.concat(filled_coords, ordered_points);
 				filled_coords = filled_coords.map(AFRAME.utils.coordinates.stringify);
 				filled_coords = filled_coords.join(', ');
 
-				line_coords.push(value_point);
+				line_coords = _.concat(line_coords, value_points);
 				line_coords = line_coords.map(AFRAME.utils.coordinates.stringify);
 				line_coords = line_coords.join(', ');
 
@@ -494,7 +502,8 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		'data': lap_points,
 		'floor_path': 'coordinates.cartesian.smoothed',
 		'value_path': 'performance.speed',
-		'scale': 0.3,
+		'scale': 0.25,
+		'steps': 100,
 		'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
 		'value_function': graphs.offset_fill.name
 	});
