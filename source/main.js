@@ -240,7 +240,6 @@ function render_racing_line(racing_line_points) {
 	const scene =					document.querySelector('a-scene');
 	const racing_line =				document.createElement('a-entity');
 	const raw_line =				document.createElement('a-entity');
-	const smoothed_line =			document.createElement('a-entity');
 	// const smoothed0_points =		document.createElement('a-entity');
 	// const smoothed1_points =		document.createElement('a-entity');
 	// const smoothed2_points =		document.createElement('a-entity');
@@ -251,7 +250,6 @@ function render_racing_line(racing_line_points) {
 
 	//	Place the racing line in the scene
 	racing_line.appendChild(raw_line);
-	racing_line.appendChild(smoothed_line);
 	scene.appendChild(racing_line);
 	// scene.appendChild(smoothed0_points);
 	// scene.appendChild(smoothed1_points);
@@ -326,18 +324,65 @@ function render_racing_line(racing_line_points) {
 
 	//	Assign the racing line component to the raw and smoother line entities
 	raw_line.setAttribute('racing_line', {
-		// coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.raw'),
-		coords: parser.coords_to_string(second_lap_test, 'coordinates.cartesian.raw'),
-		lap_boundaries: parser.laps_to_string(lap_boundaries),
-		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
-		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
-	});
-
-	smoothed_line.setAttribute('racing_line', {
-		// coords: parser.coords_to_string(first_lap, 'coordinates.cartesian.smoothed'),
+		// coords: parser.coords_to_string(second_lap_test, 'coordinates.cartesian.raw'),
 		coords: '',
 		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
 		length: second_lap_test.length,
+		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
+	});
+
+	// render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion, lap_offset_vector);
+
+
+	//	Draw raw GPS racing line
+	let grapher = new Grapher();
+	let grapher_message = function (event) {
+		const command = _.get(event, 'data.command', '');
+		switch (command) {
+			case 'point':
+				const raw_points = _.get(event, 'data.points', [{ x: 0, y: 0, z: 0 }]);
+
+				//	"Grow" the graphed line
+				let coords = raw_line.getAttribute('racing_line').coords;
+
+				coords = _.concat(coords, raw_points);
+				coords = coords.map(AFRAME.utils.coordinates.stringify);
+				coords = coords.join(', ');
+				raw_line.setAttribute('racing_line', 'coords', coords);
+
+				break;
+			case 'terminate':
+				utilities.clean_up_worker(grapher, grapher_message, 'message');
+
+				//	TODO: Should probably wrap this all up in a big fat promise
+				render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion, lap_offset_vector);
+
+				break;
+		}
+	}
+	grapher.addEventListener('message', grapher_message);
+	grapher.postMessage({
+		'command': 'start',
+		'data': second_lap_test,
+		'floor_path': 'coordinates.cartesian.raw',
+		'steps': 25,
+		'value_function': graphs.line.name
+	});
+}
+
+function render_smoothed_line(lap_points, up_vector, reorientation_quaternion, lap_offset_vector) {
+	window.console.log('render_smoothed_line');
+
+	const racing_line =				document.querySelector('#racing_line');
+	const smoothed_line =			document.createElement('a-entity');
+
+	racing_line.appendChild(smoothed_line);
+
+	//	Assign the smoothed line component
+	smoothed_line.setAttribute('racing_line', {
+		coords: '',
+		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
+		length: lap_points.length,
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 		colour: '#FF66FF'
 	});
@@ -359,7 +404,7 @@ function render_racing_line(racing_line_points) {
 
 				//	Update the existing dataset
 				for (let index = 0, length = smoothed_points.length; index < length; index++) {
-					_.set(second_lap_test, '[' + (_.get(event, 'data.index', 0) + index) + '].coordinates.cartesian.smoothed', smoothed_points[index]);
+					_.set(lap_points, '[' + (_.get(event, 'data.index', 0) + index) + '].coordinates.cartesian.smoothed', smoothed_points[index]);
 				}
 
 				break;
@@ -367,7 +412,7 @@ function render_racing_line(racing_line_points) {
 				utilities.clean_up_worker(smoother, smoother_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
-				render_graphs(second_lap_test, v3_to_center, reorientation_quaternion);
+				render_graphs(lap_points, up_vector, reorientation_quaternion);
 
 				break;
 		}
@@ -375,10 +420,10 @@ function render_racing_line(racing_line_points) {
 	smoother.addEventListener('message', smoother_message);
 	smoother.postMessage({
 		'command': 'start',
-		'data': second_lap_test,
+		'data': lap_points,
 		'bounds': [320, 160, 80, 40, 20],
 		'weights': [0.03, 0.07, 0.9],
-		'steps': 100
+		'steps': 50
 	});
 
 	//	Compute the smoothed racing line
@@ -389,7 +434,7 @@ function render_racing_line(racing_line_points) {
 	// 	coords = coords.join(', ');
 	// 	smoothed_line.setAttribute('racing_line', 'coords', coords);
 	// }, false);
-	// parser.smooth(second_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 15, window, 'smoothed');
+	// parser.smooth(lap_points, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 15, window, 'smoothed');
 
 	// smoothed0_points.setAttribute('racing_dots', {
 	// 	coords: parser.coords_to_string(smoothed_points[0]),
@@ -459,7 +504,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	});
 
-	//	Run smoothing algorithm on current lap
+	//	Draw speed graph
 	let grapher = new Grapher();
 	let grapher_message = function (event) {
 		const command = _.get(event, 'data.command', '');
@@ -503,7 +548,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		'floor_path': 'coordinates.cartesian.smoothed',
 		'value_path': 'performance.speed',
 		'scale': 0.25,
-		'steps': 100,
+		'steps': 50,
 		'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
 		'value_function': graphs.offset_fill.name
 	});

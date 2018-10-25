@@ -270,7 +270,6 @@ AFRAME.registerComponent('line_graph', {
 
 		self.value_positions = new Float32Array(self.data.length * 3);
 		self.value_geometry.addAttribute('position', new THREE.BufferAttribute(self.value_positions, 3));
-		self.value_geometry.setDrawRange(0, self.data.coords.length);
 
 		//	Create the value line
 		self.value_line = new THREE.Line(self.value_geometry, self.value_material);
@@ -286,6 +285,7 @@ AFRAME.registerComponent('line_graph', {
 
 			self.point_count++;
 		});
+		self.value_geometry.setDrawRange(0, self.point_count);
 
 		//	The original GPS data is stored as lat/long, after
 		//	converting to cartesian coordinates, the 'up' vector is
@@ -380,29 +380,34 @@ AFRAME.registerComponent('filled_graph', {
 		const self = this;
 
 		//	Materials
-		self.fill_material = new THREE.MeshBasicMaterial({ color: self.data.colour, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+		self.fill_material = new THREE.MeshBasicMaterial({
+			color: self.data.colour,
+			transparent: true,
+			opacity: 0.5,
+			side: THREE.DoubleSide,
+			depthWrite: false
+		});
 
 		//	Geometry
 		self.fill_geometry = new THREE.BufferGeometry();
 
 		//	There seems to be something amiss with the update call that causes it to miss every other addition
 		self.point_count = 0;
+		self.indicies_per_segment = 6;
 
-		self.fill_positions = new Float32Array(self.data.length * 6);
+		self.fill_positions = new Float32Array(self.data.length * self.indicies_per_segment);
 		self.fill_geometry.addAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
 
-		self.fill_indicies = new Uint32Array((self.data.length - 1) * 6);
+		self.fill_indicies = new Uint32Array((self.data.length - 1) * self.indicies_per_segment);
 		for (let i = 0, l = (self.data.length - 1); i < l; i++) {
-			self.fill_indicies[((i * 6) + 0)] = ((i * 2) + 0);
-			self.fill_indicies[((i * 6) + 1)] = ((i * 2) + 1);
-			self.fill_indicies[((i * 6) + 2)] = ((i * 2) + 2);
-			self.fill_indicies[((i * 6) + 3)] = ((i * 2) + 3);
-			self.fill_indicies[((i * 6) + 4)] = ((i * 2) + 2);
-			self.fill_indicies[((i * 6) + 5)] = ((i * 2) + 1);
+			self.fill_indicies[((i * self.indicies_per_segment) + 0)] =  ((i * 2) + 0);
+			self.fill_indicies[((i * self.indicies_per_segment) + 1)] =  ((i * 2) + 1);
+			self.fill_indicies[((i * self.indicies_per_segment) + 2)] =  ((i * 2) + 2);
+			self.fill_indicies[((i * self.indicies_per_segment) + 3)] =  ((i * 2) + 3);
+			self.fill_indicies[((i * self.indicies_per_segment) + 4)] =  ((i * 2) + 2);
+			self.fill_indicies[((i * self.indicies_per_segment) + 5)] =  ((i * 2) + 1);
 		}
 		self.fill_geometry.setIndex(new THREE.BufferAttribute(self.fill_indicies, 1));
-
-		self.fill_geometry.setDrawRange(0, (self.data.coords.length * 2));
 
 		//	Create the filled surface
 		self.filled_surface = new THREE.Mesh(self.fill_geometry, self.fill_material);
@@ -418,6 +423,7 @@ AFRAME.registerComponent('filled_graph', {
 
 			self.point_count++;
 		});
+		self.fill_geometry.setDrawRange(0, (((self.point_count - 2) * (Math.round(self.indicies_per_segment / 2))) - (((self.point_count - 2) * (Math.round(self.indicies_per_segment / 2))) % (Math.round(self.indicies_per_segment / 2)))));
 
 		//	The original GPS data is stored as lat/long, after
 		//	converting to cartesian coordinates, the 'up' vector is
@@ -464,7 +470,7 @@ AFRAME.registerComponent('filled_graph', {
 				self.point_count++;
 			});
 
-			self.fill_geometry.setDrawRange(0, (((self.point_count - 2) * 3) - (((self.point_count - 2) * 3) % 3)));
+			self.fill_geometry.setDrawRange(0, (((self.point_count - 2) * (Math.round(self.indicies_per_segment / 2))) - (((self.point_count - 2) * (Math.round(self.indicies_per_segment / 2))) % (Math.round(self.indicies_per_segment / 2)))));
 			self.fill_geometry.attributes.position.needsUpdate = true;
 			self.fill_geometry.computeBoundingSphere();
 			self.fill_geometry.computeBoundingBox();

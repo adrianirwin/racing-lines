@@ -2,7 +2,19 @@
 import * as _ from 'lodash';
 import * as THREE from 'three';
 
-//	Simple line graph, scaled along the offset (typically Z) axis
+//	Simple line graph, renders the points as provided
+function line(floor_points, values, index, scale, steps, offset_vector_coords) {
+	const points = [];
+
+	for (let count = 0; count < steps && _.isUndefined(floor_points[(index + count)]) === false; count++) {
+		const point_vec = new THREE.Vector3(floor_points[(index + count)].x, floor_points[(index + count)].y, floor_points[(index + count)].z);
+		_.set(points, '[' + count + ']', { 'x': point_vec.x, 'y': point_vec.y, 'z': point_vec.z });
+	}
+
+	return points;
+}
+
+//	Line graph, scaled along the offset (typically Z) axis
 function offset_line(floor_points, values, index, scale, steps, offset_vector_coords) {
 	const points = { 'values': [] };
 
@@ -19,7 +31,7 @@ function offset_line(floor_points, values, index, scale, steps, offset_vector_co
 	return points;
 }
 
-//	Simple filled line graph with previous point, scaled directly along the Z-axis
+//	Filled line graph with previous point, scaled directly along the Z-axis
 function offset_fill(floor_points, values, index, scale, steps, offset_vector_coords) {
 	const points = { 'floors': [] };
 
@@ -33,4 +45,4 @@ function offset_fill(floor_points, values, index, scale, steps, offset_vector_co
 	);
 }
 
-export { offset_line, offset_fill };
+export { line, offset_line, offset_fill };
