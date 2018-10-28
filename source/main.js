@@ -187,14 +187,18 @@ function data_loaded(files) {
 	//	Process all of the newly loaded data
 	new Promise((resolve, reject) => {
 
+		let data = '';
+
 		let loader_message = function (event) {
 			const message = JSON.parse(event.data);
 
 			switch (message.command) {
 				case 'data':
-					resolve({ 'data': message.data.data });
+					data += message.data;
 					break;
+
 				case 'terminate':
+					resolve({ 'data': JSON.parse(data) });
 					utilities.clean_up_worker(workers.loader, loader_message, 'message');
 					break;
 			}

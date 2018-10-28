@@ -119,7 +119,7 @@ self.format_raw_data = function(data, device_profile) {
 	const points_string = JSON.stringify(points);
 
 	let loop_index = 0;
-	const loop_size = 100000;
+	const loop_size = 200000;
 	const loop_limit = points_string.length;
 
 	const interval_id = self.setInterval((context) => {
@@ -133,6 +133,5 @@ self.format_raw_data = function(data, device_profile) {
 			self.clearInterval(interval_id);
 			self.postMessage(JSON.stringify({ 'command': 'terminate' }));
 		}
-
 	}, 1, self);
 }
