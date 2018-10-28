@@ -187,18 +187,18 @@ function data_loaded(files) {
 	//	Process all of the newly loaded data
 	new Promise((resolve, reject) => {
 
-		let data = '';
+		const loaded_values = { 'data': [] };
 
 		let loader_message = function (event) {
 			const message = JSON.parse(event.data);
 
 			switch (message.command) {
 				case 'data':
-					data += message.data;
+					loaded_values.data = loaded_values.data.concat(message.data);
 					break;
 
 				case 'terminate':
-					resolve({ 'data': JSON.parse(data) });
+					resolve(loaded_values);
 					utilities.clean_up_worker(workers.loader, loader_message, 'message');
 					break;
 			}
@@ -211,33 +211,29 @@ function data_loaded(files) {
 
 		return new Promise((resolve, reject) => {
 
-			let points = '';
-			let bounds_coords = {};
-			let vector_to_center = [];
-			let lap_boundaries = [];
+			const formatted_values = {
+				'points': [],
+				'bounds_coords': {},
+				'vector_to_center': [],
+				'lap_boundaries': []
+			};
 
 			let formatter_message = function (event) {
 				const message = JSON.parse(event.data);
 
 				switch (message.command) {
 					case 'metadata':
-						bounds_coords = message.bounds_coords,
-						vector_to_center = message.vector_to_center,
-						lap_boundaries = message.lap_boundaries
+						formatted_values.bounds_coords = message.bounds_coords,
+						formatted_values.vector_to_center = message.vector_to_center,
+						formatted_values.lap_boundaries = message.lap_boundaries
 						break;
 
 					case 'points':
-						points += message.points;
+						formatted_values.points = formatted_values.points.concat(message.points);
 						break;
 
 					case 'terminate':
-						resolve({
-							'points': JSON.parse(points),
-							'bounds_coords': bounds_coords,
-							'vector_to_center': vector_to_center,
-							'lap_boundaries': lap_boundaries
-						});
-
+						resolve(formatted_values);
 						utilities.clean_up_worker(workers.formatter, formatter_message, 'message');
 						break;
 				}
@@ -356,7 +352,7 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 		'command': 'start',
 		'data': second_lap_test,
 		'floor_path': 'coordinates.cartesian.raw',
-		'steps': 25,
+		'steps': 10,
 		'value_function': graphs.line.name
 	}));
 }
@@ -412,7 +408,7 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 		'data': lap_points,
 		'bounds': [320, 160, 80, 40, 20],
 		'weights': [0.03, 0.07, 0.9],
-		'steps': 50
+		'steps': 20
 	}));
 
 	//	Compute the smoothed racing line
@@ -538,7 +534,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		'floor_path': 'coordinates.cartesian.smoothed',
 		'value_path': 'performance.speed',
 		'scale': 0.25,
-		'steps': 50,
+		'steps': 10,
 		'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
 		'value_function': graphs.offset_fill.name
 	}));

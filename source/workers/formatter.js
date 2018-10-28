@@ -116,17 +116,15 @@ self.format_raw_data = function(data, device_profile) {
 		'lap_boundaries': lap_boundaries
 	}));
 
-	const points_string = JSON.stringify(points);
-
 	let loop_index = 0;
-	const loop_size = 200000;
-	const loop_limit = points_string.length;
+	const loop_size = 2000;
+	const loop_limit = points.length;
 
 	const interval_id = self.setInterval((context) => {
 		if ((loop_index * loop_size) < loop_limit) {
 			self.postMessage(JSON.stringify({
 				'command': 'points',
-				'points': points_string.substring((loop_index * loop_size), ((loop_index + 1) * loop_size))
+				'points': points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size))
 			}));
 			loop_index++;
 		} else {
