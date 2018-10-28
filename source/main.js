@@ -20,6 +20,14 @@ import './styles/main.scss';
 
 //	Globals
 const vr_ui_elements = [];
+const workers = {
+	csv_parser: CSV_Parser(),
+	formatter: Formatter(),
+	smoother: Smoother(),
+	grapher: Grapher()
+};
+
+window.starting_time = Date.now();
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
@@ -166,11 +174,12 @@ function start_vr_scene() {
 function data_input($input, callback) {
 	window.console.log('data_input');
 
+	window.starting_time = Date.now();
+
 	$input.on('change', function (event) {
 		const fileReader = new FileReader();
 		fileReader.onload = function () {
 			callback(window.atob(fileReader.result.split(',')[1]).replace(/"/g, ''));
-
 		};
 		fileReader.readAsDataURL($input.prop('files')[0]);
 	});
@@ -185,52 +194,55 @@ function data_loaded(csv) {
 
 	//	Process all of the newly loaded data
 	new Promise((resolve, reject) => {
-		let csv_parser = CSV_Parser();
+		
 		let csv_parser_message = function (event) {
-			const command = _.get(event, 'data.command', '');
-			switch (command) {
+			const message = JSON.parse(event.data);
+
+			switch (message.command) {
 				case 'data':
-					const data = _.get(event, 'data.data.data', []);
-					resolve(data);
+					resolve({ 'data': message.data.data });
 					break;
 				case 'terminate':
-					utilities.clean_up_worker(csv_parser, csv_parser_message, 'message');
+					utilities.clean_up_worker(workers.csv_parser, csv_parser_message, 'message');
 					break;
 			}
 		}
 
-		csv_parser.addEventListener('message', csv_parser_message);
-		csv_parser.postMessage({ 'command': 'start', 'csv': csv });
+		workers.csv_parser.addEventListener('message', csv_parser_message);
+		workers.csv_parser.postMessage(JSON.stringify({ 'command': 'start', 'csv': csv }));
 
-	}).then(function(data) {
+	}).then(function(values) {
 
 		return new Promise((resolve, reject) => {
-			let formatter = Formatter();
+
 			let formatter_message = function (event) {
-				const command = _.get(event, 'data.command', '');
-				switch (command) {
+				const message = JSON.parse(event.data);
+
+				switch (message.command) {
 					case 'points':
-						const points = _.get(event, 'data.points', []);
-						resolve(points);
+						resolve({
+							'points': message.points,
+							'bounds_coords': message.bounds_coords,
+							'vector_to_center': message.vector_to_center,
+							'lap_boundaries': message.lap_boundaries
+						});
 						break;
 					case 'terminate':
-						utilities.clean_up_worker(formatter, formatter_message, 'message');
+						utilities.clean_up_worker(workers.formatter, formatter_message, 'message');
 						break;
 				}
 			}
 
-			formatter.addEventListener('message', formatter_message);
-			formatter.postMessage({ 'command': 'start', 'data': data, 'device_profile': device_profile });
+			workers.formatter.addEventListener('message', formatter_message);
+			workers.formatter.postMessage(JSON.stringify({ 'command': 'start', 'data': values.data, 'device_profile': device_profile }));
 		});
 
-	}).then(function(points) {
-
-		render_racing_line(points);
-
+	}).then(function(values) {
+		render_racing_line(values.points, values.bounds_coords, values.vector_to_center, values.lap_boundaries);
 	});
 }
 
-function render_racing_line(racing_line_points) {
+function render_racing_line(racing_line_points, bounds_coords, vector_to_center, lap_boundaries) {
 	window.console.log('render_racing_line');
 
 	//	TODO: Set dynamically/allow user input?
@@ -267,46 +279,21 @@ function render_racing_line(racing_line_points) {
 
 	raw_line.setAttribute('position', '0.0 0.0 -1.0');
 
-	
-
 	//	Parse the log data, and extract the lap boundaries
 	// const racing_line_points =		parser.racing_line_points(data, device_profile);
-	const lap_boundaries =			parser.laps(racing_line_points);
-
-	//	Re-center the racing line data
-	const bounds_coords =			parser.bounds(racing_line_points);
-	const vector_to_center =		parser.vector_to_center(bounds_coords);
-	const vector_to_north_pole =	parser.vector_to_north_pole();
-									parser.cartesian(racing_line_points);
-									parser.recenter(racing_line_points, vector_to_center[0], vector_to_center[1], vector_to_center[2]);
+	// const lap_boundaries =			parser.laps(racing_line_points);
 
 	//	Trim the data to speed up development
 	const first_lap =				racing_line_points.slice(0, lap_boundaries[0]);
 	const first_lap_test =			racing_line_points.slice(0, lap_boundaries[0]);
 	const second_lap_test =			racing_line_points.slice(lap_boundaries[1], lap_boundaries[2]);
-	// const second_lap_test =			racing_line_points.slice(
-	// 	lap_boundaries[1],
-	// 	Math.round(
-	// 		(lap_boundaries[1]) + ((lap_boundaries[2] - lap_boundaries[1]) * 0.05)
-	// 	)
-	// );
-
-	//	Smooth the raw cartesian points
-	// window.addEventListener('smoothed', function (event) {
-	// 	window.console.info(Date.now(), 'smoothed', (event.detail.index + '/' + event.detail.length));
-	// }, false);
-	// 								parser.smooth(first_lap_test, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 50, window, 'smoothed');
-	// const smoothed_points = 		parser.smooth(first_lap, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], true);
-
-	//	Vector to offset subsequent laps by
-	//	NOTE: Only visible if more than one lap is being rendered
-	const lap_offset_vector =		new THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2]).normalize();
 
 	//	Three significant vectors
 	//	 - to the center of the track bounds in earth space
 	//	 - to the north pole ('up') in earth space
 	//	 - cross product along which to rotate to translate from one to the other
 	const v3_to_center =			new THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2]);
+	const vector_to_north_pole =	parser.vector_to_north_pole();
 	const v3_to_north_pole =		new THREE.Vector3(vector_to_north_pole[0], vector_to_north_pole[1], vector_to_north_pole[2]);
 	let v3_cross =					new THREE.Vector3(0, 0, 0);
 
@@ -321,80 +308,70 @@ function render_racing_line(racing_line_points) {
 	var reorientation_quaternion =	new THREE.Quaternion();
 	reorientation_quaternion.setFromAxisAngle(v3_cross, angle);
 
-
 	//	Assign the racing line component to the raw and smoother line entities
 	raw_line.setAttribute('racing_line', {
-		// coords: parser.coords_to_string(second_lap_test, 'coordinates.cartesian.raw'),
 		coords: '',
-		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
 		length: second_lap_test.length,
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	});
 
-	// render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion, lap_offset_vector);
-
-
 	//	Draw raw GPS racing line
-	let grapher = new Grapher();
 	let grapher_message = function (event) {
-		const command = _.get(event, 'data.command', '');
-		switch (command) {
-			case 'point':
-				const raw_points = _.get(event, 'data.points', [{ x: 0, y: 0, z: 0 }]);
+		const message = JSON.parse(event.data);
 
-				//	"Grow" the graphed line
+		switch (message.command) {
+			case 'point':
 				let coords = raw_line.getAttribute('racing_line').coords;
 
-				coords = _.concat(coords, raw_points);
+				coords = _.concat(coords, message.points);
 				coords = coords.map(AFRAME.utils.coordinates.stringify);
 				coords = coords.join(', ');
 				raw_line.setAttribute('racing_line', 'coords', coords);
 
 				break;
 			case 'terminate':
-				utilities.clean_up_worker(grapher, grapher_message, 'message');
+				utilities.clean_up_worker(workers.grapher, grapher_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
-				render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion, lap_offset_vector);
+				render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion);
 
 				break;
 		}
 	}
-	grapher.addEventListener('message', grapher_message);
-	grapher.postMessage({
+
+	workers.grapher.addEventListener('message', grapher_message);
+	workers.grapher.postMessage(JSON.stringify({
 		'command': 'start',
 		'data': second_lap_test,
 		'floor_path': 'coordinates.cartesian.raw',
 		'steps': 25,
 		'value_function': graphs.line.name
-	});
+	}));
 }
 
-function render_smoothed_line(lap_points, up_vector, reorientation_quaternion, lap_offset_vector) {
+function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 	window.console.log('render_smoothed_line');
 
-	const racing_line =				document.querySelector('#racing_line');
-	const smoothed_line =			document.createElement('a-entity');
+	const racing_line = document.querySelector('#racing_line');
+	const smoothed_line = document.createElement('a-entity');
 
 	racing_line.appendChild(smoothed_line);
 
 	//	Assign the smoothed line component
 	smoothed_line.setAttribute('racing_line', {
 		coords: '',
-		lap_offset_vector: parser.vector_to_string(lap_offset_vector),
 		length: lap_points.length,
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
 		colour: '#FF66FF'
 	});
 
-
 	//	Run smoothing algorithm on current lap
-	let smoother = new Smoother();
 	let smoother_message = function (event) {
-		const command = _.get(event, 'data.command', '');
-		switch (command) {
+		const message = JSON.parse(event.data);
+
+		switch (message.command) {
 			case 'point':
-				const smoothed_points = _.get(event, 'data.points', [{ x: 0, y: 0, z: 0 }]);
+				const smoothed_points = message.points;
 
 				let coords = smoothed_line.getAttribute('racing_line').coords;
 				coords = _.concat(coords, smoothed_points);
@@ -404,12 +381,12 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion, l
 
 				//	Update the existing dataset
 				for (let index = 0, length = smoothed_points.length; index < length; index++) {
-					_.set(lap_points, '[' + (_.get(event, 'data.index', 0) + index) + '].coordinates.cartesian.smoothed', smoothed_points[index]);
+					_.set(lap_points, '[' + (_.get(message, 'index', 0) + index) + '].coordinates.cartesian.smoothed', smoothed_points[index]);
 				}
 
 				break;
 			case 'terminate':
-				utilities.clean_up_worker(smoother, smoother_message, 'message');
+				utilities.clean_up_worker(workers.smoother, smoother_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_graphs(lap_points, up_vector, reorientation_quaternion);
@@ -417,14 +394,14 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion, l
 				break;
 		}
 	}
-	smoother.addEventListener('message', smoother_message);
-	smoother.postMessage({
+	workers.smoother.addEventListener('message', smoother_message);
+	workers.smoother.postMessage(JSON.stringify({
 		'command': 'start',
 		'data': lap_points,
 		'bounds': [320, 160, 80, 40, 20],
 		'weights': [0.03, 0.07, 0.9],
 		'steps': 50
-	});
+	}));
 
 	//	Compute the smoothed racing line
 	// window.addEventListener('smoothed', function (event) {
@@ -486,8 +463,8 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion, l
 function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 	window.console.log('render_graphs');
 
-	const racing_line =				document.querySelector('#racing_line');
-	const graphed_line =			document.createElement('a-entity');
+	const racing_line = document.querySelector('#racing_line');
+	const graphed_line = document.createElement('a-entity');
 
 	racing_line.appendChild(graphed_line);
 
@@ -505,13 +482,13 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 	});
 
 	//	Draw speed graph
-	let grapher = new Grapher();
 	let grapher_message = function (event) {
-		const command = _.get(event, 'data.command', '');
-		switch (command) {
+		const message = JSON.parse(event.data);
+
+		switch (message.command) {
 			case 'point':
-				const value_points = _.get(event, 'data.points.values', [{ x: 0, y: 0, z: 0 }]);
-				const floor_points = _.get(event, 'data.points.floors', [{ x: 0, y: 0, z: 0 }]);
+				const value_points = message.points.values;
+				const floor_points = message.points.floors;
 
 				//	"Grow" the graphed line
 				let filled_coords = graphed_line.getAttribute('filled_graph').coords;
@@ -537,12 +514,13 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 
 				break;
 			case 'terminate':
-				utilities.clean_up_worker(grapher, grapher_message, 'message');
+				utilities.clean_up_worker(workers.grapher, grapher_message, 'message');
 				break;
 		}
 	}
-	grapher.addEventListener('message', grapher_message);
-	grapher.postMessage({
+
+	workers.grapher.addEventListener('message', grapher_message);
+	workers.grapher.postMessage(JSON.stringify({
 		'command': 'start',
 		'data': lap_points,
 		'floor_path': 'coordinates.cartesian.smoothed',
@@ -551,7 +529,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		'steps': 50,
 		'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
 		'value_function': graphs.offset_fill.name
-	});
+	}));
 }
 
 //	Start the Application

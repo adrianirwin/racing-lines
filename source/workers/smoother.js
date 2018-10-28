@@ -3,14 +3,16 @@ import * as _ from 'lodash';
 import * as THREE from 'three';
 
 self.addEventListener('message', (event) => {
-	const command = _.get(event, 'data.command', '');
+	const message = JSON.parse(_.get(event, 'data', {}));
+	const command = _.get(message, 'command', '');
+
 	switch (command) {
 		case 'start':
 			self.smooth(
-				_.get(event, 'data.data', []),
-				_.get(event, 'data.bounds', []),
-				_.get(event, 'data.weights', []),
-				_.get(event, 'data.steps', 1),
+				_.get(message, 'data', []),
+				_.get(message, 'bounds', []),
+				_.get(message, 'weights', []),
+				_.get(message, 'steps', 1),
 			);
 			break;
 	}
@@ -128,7 +130,7 @@ self.smooth = function(data, bounds, weights, steps) {
 	cloned_data = JSON.parse(cloned_data);
 
 	for (let index = 0, length = data.length; index < length; index += steps) {
-		self.postMessage({
+		self.postMessage(JSON.stringify({
 			'command': 'point',
 			'points': smooth_by_averages(
 				cloned_data,
@@ -139,8 +141,8 @@ self.smooth = function(data, bounds, weights, steps) {
 			),
 			'index': index,
 			'length': length
-		});
+		}));
 	}
 
-	self.postMessage({ 'command': 'terminate' });
+	self.postMessage(JSON.stringify({ 'command': 'terminate' }));
 }

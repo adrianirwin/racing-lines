@@ -1,12 +1,15 @@
 //	Libraries
 import * as _ from 'lodash';
+import * as ecef from 'geodetic-to-ecef';
 import * as references from './../references';
 
 self.addEventListener('message', (event) => {
-	const command = _.get(event, 'data.command', '');
+	const message = JSON.parse(_.get(event, 'data', {}));
+	const command = _.get(message, 'command', '');
+
 	switch (command) {
 		case 'start':
-			self.format_raw_data(_.get(event, 'data.data', []), _.get(event, 'data.device_profile', {}));
+			self.format_raw_data(_.get(message, 'data', []), _.get(message, 'device_profile', {}));
 			break;
 	}
 });
@@ -15,11 +18,24 @@ self.format_raw_data = function(data, device_profile) {
 	self.console.log('formatter.format_raw_data');
 
 	const points = [];
+	const lap_boundaries = [];
+	const bounds_coords = {
+		'latitude_northmost': null,
+		'latitude_southmost': null,
+		'longitude_westmost': null,
+		'longitude_eastmost': null
+	};
+
+	let gps_index = 0;
+	let most_recent_lap = 0;
+
 	data.forEach(function (row, index) {
 		//	TODO: Interpolation
 
 		const latitude = row[_.get(device_profile, 'log_indicies.gps.latitude')];
 		const longitude = row[_.get(device_profile, 'log_indicies.gps.longitude')];
+
+		const current_lap = row[_.get(device_profile, 'log_indicies.performance.current_lap')];
 
 		//	Skip header row and rows without GPS coords
 		//	TODO: Don't skip the non-GPS rows
@@ -30,10 +46,17 @@ self.format_raw_data = function(data, device_profile) {
 		) {
 
 			const point = new references.Racing_Line_Point();
+			const cartesian_coords = ecef(latitude, longitude);
 
 			references.value_to_point(point, 'coordinates.gps', {
 				'latitude': latitude,
 				'longitude': longitude
+			});
+
+			references.value_to_point(point, 'coordinates.cartesian.raw', {
+				'x': cartesian_coords[0],
+				'y': cartesian_coords[1],
+				'z': cartesian_coords[2]
 			});
 
 			references.log_to_point(point, row, device_profile, 'g', ['x', 'y', 'z']);
@@ -43,10 +66,56 @@ self.format_raw_data = function(data, device_profile) {
 			references.log_to_point(point, row, device_profile, 'diagnostics', ['coolant_temperature', 'oil_temperature', 'oil_pressure', 'battery_voltage']);
 
 			points.push(point);
+
+			if (_.isNull(bounds_coords.latitude_northmost) === true || latitude > bounds_coords.latitude_northmost) {
+				bounds_coords.latitude_northmost = latitude;
+			}
+
+			if (_.isNull(bounds_coords.latitude_southmost) === true || latitude < bounds_coords.latitude_southmost) {
+				bounds_coords.latitude_southmost = latitude;
+			}
+
+			if (_.isNull(bounds_coords.longitude_westmost) === true || longitude > bounds_coords.longitude_westmost) {
+				bounds_coords.longitude_westmost = longitude;
+			}
+
+			if (_.isNull(bounds_coords.longitude_eastmost) === true || longitude < bounds_coords.longitude_eastmost) {
+				bounds_coords.longitude_eastmost = longitude;
+			}
+
+			if (most_recent_lap !== current_lap) {
+				most_recent_lap = current_lap;
+				lap_boundaries.push(gps_index);
+			}
+			gps_index++;
 		}
 	});
 
-	self.postMessage({ 'command': 'points', 'points': points });
-	self.postMessage({ 'command': 'terminate' });
+	//	Vector from the center of the Earth to the center of the bounds
+	const vector_to_center = ecef(
+		((bounds_coords.latitude_northmost + bounds_coords.latitude_southmost) / 2),
+		((bounds_coords.longitude_westmost + bounds_coords.longitude_eastmost) / 2)
+	);
+
+	//	Re-center the XYZ points to have the center of the bounded area align to { x: 0, y: 0, z: 0 }
+	points.forEach(function (point, index) {
+		_.set(points, '[' + index + '].coordinates.cartesian.raw', {
+			'x': (_.get(point, 'coordinates.cartesian.raw.x') - vector_to_center[0]),
+			'y': (_.get(point, 'coordinates.cartesian.raw.y') - vector_to_center[1]),
+			'z': (_.get(point, 'coordinates.cartesian.raw.z') - vector_to_center[2])
+		});
+	});
+
+	//	Remove the '0' boundary
+	lap_boundaries.splice(0, 1);
+
+	self.postMessage(JSON.stringify({
+		'command': 'points',
+		'points': points,
+		'bounds_coords': bounds_coords,
+		'vector_to_center': vector_to_center,
+		'lap_boundaries': lap_boundaries
+	}));
+	self.postMessage(JSON.stringify({ 'command': 'terminate' }));
 	return;
 }

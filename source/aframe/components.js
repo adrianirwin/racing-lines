@@ -85,9 +85,6 @@ AFRAME.registerComponent('racing_line', {
 		lap_boundaries: {
 			type: 'array', default: [0]
 		},
-		lap_offset_vector: {
-			type: 'vec3', default: {x: 0, y: 0, z: 1}
-		},
 		lap_offset_length: {
 			type: 'number', default: 10
 		},
@@ -138,23 +135,7 @@ AFRAME.registerComponent('racing_line', {
 
 				self.vertices_count++;
 			} else {
-				let start_finish = false;
 				const vertex = new THREE.Vector3(point.x, point.y, point.z);
-
-				//	Calculate vertical offset
-				if (_.indexOf(self.data.lap_boundaries, String(index)) !== -1) {
-					lap_offset_increment++;
-					start_finish = true;
-				}
-				const lap_offset_vector = new THREE.Vector3(
-					self.data.lap_offset_vector.x,
-					self.data.lap_offset_vector.y,
-					self.data.lap_offset_vector.z
-				);
-				lap_offset_vector.multiplyScalar(lap_offset_increment * self.data.lap_offset_length);
-
-				//	Apply the offset and add the raw vertex to the racing line
-				vertex.add(lap_offset_vector);
 				self.racing_line_geometry.vertices.push(vertex);
 			}
 		});
