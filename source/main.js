@@ -10,7 +10,7 @@ import * as graphs from './graphs';
 import './aframe/components';
 
 //	Web Workers
-import CSV_Parser from './workers/csv.js';
+import Loader from './workers/loader.js';
 import Formatter from './workers/formatter.js';
 import Smoother from './workers/smoother.js';
 import Grapher from './workers/grapher.js';
@@ -21,13 +21,11 @@ import './styles/main.scss';
 //	Globals
 const vr_ui_elements = [];
 const workers = {
-	csv_parser: CSV_Parser(),
+	loader: Loader(),
 	formatter: Formatter(),
 	smoother: Smoother(),
 	grapher: Grapher()
 };
-
-window.starting_time = Date.now();
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
@@ -174,18 +172,12 @@ function start_vr_scene() {
 function data_input($input, callback) {
 	window.console.log('data_input');
 
-	window.starting_time = Date.now();
-
 	$input.on('change', function (event) {
-		const fileReader = new FileReader();
-		fileReader.onload = function () {
-			callback(window.atob(fileReader.result.split(',')[1]).replace(/"/g, ''));
-		};
-		fileReader.readAsDataURL($input.prop('files')[0]);
+		callback($input.prop('files'));
 	});
 }
 
-function data_loaded(csv) {
+function data_loaded(files) {
 	window.console.log('data_loaded');
 
 	//	TEMP: Hard-code the device profile
@@ -194,8 +186,8 @@ function data_loaded(csv) {
 
 	//	Process all of the newly loaded data
 	new Promise((resolve, reject) => {
-		
-		let csv_parser_message = function (event) {
+
+		let loader_message = function (event) {
 			const message = JSON.parse(event.data);
 
 			switch (message.command) {
@@ -203,31 +195,45 @@ function data_loaded(csv) {
 					resolve({ 'data': message.data.data });
 					break;
 				case 'terminate':
-					utilities.clean_up_worker(workers.csv_parser, csv_parser_message, 'message');
+					utilities.clean_up_worker(workers.loader, loader_message, 'message');
 					break;
 			}
 		}
 
-		workers.csv_parser.addEventListener('message', csv_parser_message);
-		workers.csv_parser.postMessage(JSON.stringify({ 'command': 'start', 'csv': csv }));
+		workers.loader.addEventListener('message', loader_message);
+		workers.loader.postMessage(files);
 
 	}).then(function(values) {
 
 		return new Promise((resolve, reject) => {
 
+			let points = '';
+			let bounds_coords = {};
+			let vector_to_center = [];
+			let lap_boundaries = [];
+
 			let formatter_message = function (event) {
 				const message = JSON.parse(event.data);
 
 				switch (message.command) {
-					case 'points':
-						resolve({
-							'points': message.points,
-							'bounds_coords': message.bounds_coords,
-							'vector_to_center': message.vector_to_center,
-							'lap_boundaries': message.lap_boundaries
-						});
+					case 'metadata':
+						bounds_coords = message.bounds_coords,
+						vector_to_center = message.vector_to_center,
+						lap_boundaries = message.lap_boundaries
 						break;
+
+					case 'points':
+						points += message.points;
+						break;
+
 					case 'terminate':
+						resolve({
+							'points': JSON.parse(points),
+							'bounds_coords': bounds_coords,
+							'vector_to_center': vector_to_center,
+							'lap_boundaries': lap_boundaries
+						});
+
 						utilities.clean_up_worker(workers.formatter, formatter_message, 'message');
 						break;
 				}
@@ -238,7 +244,9 @@ function data_loaded(csv) {
 		});
 
 	}).then(function(values) {
+
 		render_racing_line(values.points, values.bounds_coords, values.vector_to_center, values.lap_boundaries);
+
 	});
 }
 

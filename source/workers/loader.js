@@ -1,20 +1,19 @@
 //	Libraries
-import * as _ from 'lodash';
 import * as Papa from 'papaparse';
 
 self.addEventListener('message', (event) => {
-	const message = JSON.parse(_.get(event, 'data', {}));
-	const command = _.get(message, 'command', '');
 
-	switch (command) {
-		case 'start':
-			self.from_csv(_.get(message, 'csv', []));
-			break;
-	}
+	const fileReader = new FileReader();
+
+	fileReader.onload = function () {
+		self.csv_to_object(self.atob(fileReader.result.split(',')[1]).replace(/"/g, ''));
+	};
+	fileReader.readAsDataURL(event.data[0]);
 });
 
-self.from_csv = function(csv) {
-	self.console.log('csv.from_csv');
+self.csv_to_object = function(csv) {
+	self.console.log('loader.csv_to_object');
+
 	self.postMessage(JSON.stringify({ 'command': 'data', 'data': Papa.parse(csv, { 'delimiter': ',', 'dynamicTyping': true, 'header': false }) }));
 	self.postMessage(JSON.stringify({ 'command': 'terminate' }));
 	return;
