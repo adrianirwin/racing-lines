@@ -11,7 +11,6 @@ import './aframe/components';
 
 //	Web Workers
 import Loader from './workers/loader.js';
-import Formatter from './workers/formatter.js';
 import Smoother from './workers/smoother.js';
 import Grapher from './workers/grapher.js';
 
@@ -22,7 +21,6 @@ import './styles/main.scss';
 const vr_ui_elements = [];
 const workers = {
 	loader: Loader(),
-	formatter: Formatter(),
 	smoother: Smoother(),
 	grapher: Grapher()
 };
@@ -180,21 +178,28 @@ function data_input($input, callback) {
 function data_loaded(files) {
 	window.console.log('data_loaded');
 
-	//	TEMP: Hard-code the device profile
-	//	TODO: Provide a selector widget
-	const device_profile = references.device('RaceCapture/Pro MK3');
-
 	//	Process all of the newly loaded data
 	new Promise((resolve, reject) => {
 
-		const loaded_values = { 'data': [] };
+		const loaded_values = {
+			'points': [],
+			'bounds_coords': {},
+			'vector_to_center': [],
+			'lap_boundaries': []
+		};
 
 		let loader_message = function (event) {
 			const message = JSON.parse(event.data);
 
 			switch (message.command) {
-				case 'data':
-					loaded_values.data = loaded_values.data.concat(message.data);
+				case 'metadata':
+					loaded_values.bounds_coords = message.bounds_coords,
+					loaded_values.vector_to_center = message.vector_to_center,
+					loaded_values.lap_boundaries = message.lap_boundaries
+					break;
+
+				case 'points':
+					loaded_values.points = loaded_values.points.concat(message.points);
 					break;
 
 				case 'terminate':
@@ -206,42 +211,6 @@ function data_loaded(files) {
 
 		workers.loader.addEventListener('message', loader_message);
 		workers.loader.postMessage(files);
-
-	}).then(function(values) {
-
-		return new Promise((resolve, reject) => {
-
-			const formatted_values = {
-				'points': [],
-				'bounds_coords': {},
-				'vector_to_center': [],
-				'lap_boundaries': []
-			};
-
-			let formatter_message = function (event) {
-				const message = JSON.parse(event.data);
-
-				switch (message.command) {
-					case 'metadata':
-						formatted_values.bounds_coords = message.bounds_coords,
-						formatted_values.vector_to_center = message.vector_to_center,
-						formatted_values.lap_boundaries = message.lap_boundaries
-						break;
-
-					case 'points':
-						formatted_values.points = formatted_values.points.concat(message.points);
-						break;
-
-					case 'terminate':
-						resolve(formatted_values);
-						utilities.clean_up_worker(workers.formatter, formatter_message, 'message');
-						break;
-				}
-			}
-
-			workers.formatter.addEventListener('message', formatter_message);
-			workers.formatter.postMessage(JSON.stringify({ 'command': 'start', 'data': values.data, 'device_profile': device_profile }));
-		});
 
 	}).then(function(values) {
 
@@ -329,12 +298,10 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 
 		switch (message.command) {
 			case 'point':
-				let coords = raw_line.getAttribute('racing_line').coords;
 
-				coords = _.concat(coords, message.points);
-				coords = coords.map(AFRAME.utils.coordinates.stringify);
+				let coords = message.points.map(AFRAME.utils.coordinates.stringify);
 				coords = coords.join(', ');
-				raw_line.setAttribute('racing_line', 'coords', coords);
+				raw_line.setAttribute('racing_line', 'streamed_coords', coords);
 
 				break;
 			case 'terminate':
@@ -379,17 +346,15 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 
 		switch (message.command) {
 			case 'point':
-				const smoothed_points = message.points;
 
-				let coords = smoothed_line.getAttribute('racing_line').coords;
-				coords = _.concat(coords, smoothed_points);
-				coords = coords.map(AFRAME.utils.coordinates.stringify);
-				coords = coords.join(', ');
-				smoothed_line.setAttribute('racing_line', 'coords', coords);
+				let smoothed_coords = message.points.map(AFRAME.utils.coordinates.stringify);
+				smoothed_coords = smoothed_coords.join(', ');
+
+				smoothed_line.setAttribute('racing_line', 'streamed_coords', smoothed_coords);
 
 				//	Update the existing dataset
-				for (let index = 0, length = smoothed_points.length; index < length; index++) {
-					_.set(lap_points, '[' + (_.get(message, 'index', 0) + index) + '].coordinates.cartesian.smoothed', smoothed_points[index]);
+				for (let index = 0, length = message.points.length; index < length; index++) {
+					_.set(lap_points, '[' + (_.get(message, 'index', 0) + index) + '].coordinates.cartesian.smoothed', message.points[index]);
 				}
 
 				break;
@@ -495,12 +460,9 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 
 		switch (message.command) {
 			case 'point':
+				//	"Grow" the graphed line
 				const value_points = message.points.values;
 				const floor_points = message.points.floors;
-
-				//	"Grow" the graphed line
-				let filled_coords = graphed_line.getAttribute('filled_graph').coords;
-				let line_coords = graphed_line.getAttribute('line_graph').coords;
 
 				//	Set the order of the points for the filled surface
 				const ordered_points = [];
@@ -509,16 +471,14 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 					ordered_points.push(value_points[index]);
 				}
 
-				filled_coords = _.concat(filled_coords, ordered_points);
-				filled_coords = filled_coords.map(AFRAME.utils.coordinates.stringify);
+				let filled_coords = ordered_points.map(AFRAME.utils.coordinates.stringify);
 				filled_coords = filled_coords.join(', ');
 
-				line_coords = _.concat(line_coords, value_points);
-				line_coords = line_coords.map(AFRAME.utils.coordinates.stringify);
+				let line_coords = value_points.map(AFRAME.utils.coordinates.stringify);
 				line_coords = line_coords.join(', ');
 
-				graphed_line.setAttribute('filled_graph', 'coords', filled_coords);
-				graphed_line.setAttribute('line_graph', 'coords', line_coords);
+				graphed_line.setAttribute('filled_graph', 'streamed_coords', filled_coords);
+				graphed_line.setAttribute('line_graph', 'streamed_coords', line_coords);
 
 				break;
 			case 'terminate':

@@ -82,6 +82,16 @@ AFRAME.registerComponent('racing_line', {
 				{x:  0, y: 0, z: -1}
 			]
 		},
+		streamed_coords: {
+			parse: function (value) {
+				if (_.isEmpty(value) === false && _.isString(value) === true) {
+					return value.split(',').map(AFRAME.utils.coordinates.parse);
+				} else {
+					return [];
+				}
+			},
+			default: []
+		},
 		lap_boundaries: {
 			type: 'array', default: [0]
 		},
@@ -169,15 +179,15 @@ AFRAME.registerComponent('racing_line', {
 	update: function (oldData) {
 		const self = this;
 
-		if (
-			self.will_grow === true
-			&& _.isEmpty(oldData.coords) === false
-			&& _.isEmpty(self.data.coords) === false
-		) {
-			const diff = self.data.coords.slice(self.vertices_count);
-			const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
+		// if (
+		// 	self.will_grow === true
+		// 	&& _.isEmpty(oldData.coords) === false
+		// 	&& _.isEmpty(self.data.coords) === false
+		// ) {
+		if (_.isEmpty(self.data.streamed_coords) === false) {
+			// const diff = self.data.coords.slice(self.vertices_count);
 
-			_.forEach(diff, (point, index) => {
+			_.forEach(self.data.streamed_coords, (point, index) => {
 				const vertex = new THREE.Vector3(point.x, point.y, point.z);
 				const reorientation_quaternion = new THREE.Quaternion(
 					self.data.reorientation_quaternion.x,
@@ -228,6 +238,16 @@ AFRAME.registerComponent('line_graph', {
 				{x:  0, y: 0, z:  1},
 				{x:  0, y: 0, z: -1}
 			]
+		},
+		streamed_coords: {
+			parse: function (value) {
+				if (_.isEmpty(value) === false && _.isString(value) === true) {
+					return value.split(',').map(AFRAME.utils.coordinates.parse);
+				} else {
+					return [];
+				}
+			},
+			default: []
 		},
 		length: {
 			type: 'number', default: 0
@@ -287,14 +307,16 @@ AFRAME.registerComponent('line_graph', {
 	update: function (oldData) {
 		const self = this;
 
-		if (
-			_.isEmpty(oldData.coords) === false
-			&& _.isEmpty(self.data.coords) === false
-		) {
-			const diff = self.data.coords.slice(self.point_count);
-			// const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
+		// if (
+		// 	_.isEmpty(oldData.coords) === false
+		// 	&& _.isEmpty(self.data.coords) === false
+		// ) {
+		if (_.isEmpty(self.data.streamed_coords) === false) {
 
-			_.forEach(diff, (point, index) => {
+			// const diff = self.data.coords.slice(self.point_count);
+
+			// _.forEach(diff, (point, index) => {
+			_.forEach(self.data.streamed_coords, (point, index) => {
 				const vertex = new THREE.Vector3(point.x, point.y, point.z);
 				const reorientation_quaternion = new THREE.Quaternion(
 					self.data.reorientation_quaternion.x,
@@ -348,6 +370,16 @@ AFRAME.registerComponent('filled_graph', {
 				{x: -1, y: 0, z:  0},
 				{x:  1, y: 0, z:  1}
 			]
+		},
+		streamed_coords: {
+			parse: function (value) {
+				if (_.isEmpty(value) === false && _.isString(value) === true) {
+					return value.split(',').map(AFRAME.utils.coordinates.parse);
+				} else {
+					return [];
+				}
+			},
+			default: []
 		},
 		length: {
 			type: 'number', default: 0
@@ -425,14 +457,8 @@ AFRAME.registerComponent('filled_graph', {
 	update: function (oldData) {
 		const self = this;
 
-		if (
-			_.isEmpty(oldData.coords) === false
-			&& _.isEmpty(self.data.coords) === false
-		) {
-			const diff = self.data.coords.slice(self.point_count);
-			// const new_diff = _.map(diff, (item) => (item.x + ' ' + item.y + ' ' + item.z));
-
-			_.forEach(diff, (point, index) => {
+		if (_.isEmpty(self.data.streamed_coords) === false) {
+			_.forEach(self.data.streamed_coords, (point, index) => {
 				const vertex = new THREE.Vector3(point.x, point.y, point.z);
 				const reorientation_quaternion = new THREE.Quaternion(
 					self.data.reorientation_quaternion.x,
