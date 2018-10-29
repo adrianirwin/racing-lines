@@ -319,7 +319,7 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 		'command': 'start',
 		'data': second_lap_test,
 		'floor_path': 'coordinates.cartesian.raw',
-		'steps': 10,
+		'steps': 100,
 		'value_function': graphs.line.name
 	}));
 }
@@ -373,7 +373,7 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 		'data': lap_points,
 		'bounds': [320, 160, 80, 40, 20],
 		'weights': [0.03, 0.07, 0.9],
-		'steps': 20
+		'steps': 50
 	}));
 
 	//	Compute the smoothed racing line
@@ -494,7 +494,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		'floor_path': 'coordinates.cartesian.smoothed',
 		'value_path': 'performance.speed',
 		'scale': 0.25,
-		'steps': 10,
+		'steps': 50,
 		'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
 		'value_function': graphs.offset_fill.name
 	}));
