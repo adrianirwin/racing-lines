@@ -256,10 +256,6 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 
 	raw_line.setAttribute('position', '0.0 0.0 -1.0');
 
-	//	Parse the log data, and extract the lap boundaries
-	// const racing_line_points =		parser.racing_line_points(data, device_profile);
-	// const lap_boundaries =			parser.laps(racing_line_points);
-
 	//	Trim the data to speed up development
 	const first_lap =				racing_line_points.slice(0, lap_boundaries[0]);
 	const first_lap_test =			racing_line_points.slice(0, lap_boundaries[0]);
@@ -315,13 +311,28 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 	}
 
 	workers.grapher.addEventListener('message', grapher_message);
-	workers.grapher.postMessage(JSON.stringify({
-		'command': 'start',
-		'data': second_lap_test,
-		'floor_path': 'coordinates.cartesian.raw',
-		'steps': 100,
-		'value_function': graphs.line.name
-	}));
+
+	let loop_index = 0;
+	const loop_size = 200;
+	const loop_limit = second_lap_test.length;
+
+	const interval_id = window.setInterval((context) => {
+		if ((loop_index * loop_size) < loop_limit) {
+			workers.grapher.postMessage(JSON.stringify({
+				'command': 'points',
+				'points': second_lap_test.slice((loop_index * loop_size), ((loop_index + 1) * loop_size))
+			}));
+			loop_index++;
+		} else {
+			window.clearInterval(interval_id);
+			workers.grapher.postMessage(JSON.stringify({
+				'command': 'start',
+				'floor_path': 'coordinates.cartesian.raw',
+				'steps': 100,
+				'value_function': graphs.line.name
+			}));
+		}
+	}, 1, this);
 }
 
 function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
@@ -345,7 +356,7 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 		const message = JSON.parse(event.data);
 
 		switch (message.command) {
-			case 'point':
+			case 'points':
 
 				let smoothed_coords = message.points.map(AFRAME.utils.coordinates.stringify);
 				smoothed_coords = smoothed_coords.join(', ');
@@ -367,14 +378,30 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 				break;
 		}
 	}
+
 	workers.smoother.addEventListener('message', smoother_message);
-	workers.smoother.postMessage(JSON.stringify({
-		'command': 'start',
-		'data': lap_points,
-		'bounds': [320, 160, 80, 40, 20],
-		'weights': [0.03, 0.07, 0.9],
-		'steps': 50
-	}));
+
+	let loop_index = 0;
+	const loop_size = 100;
+	const loop_limit = lap_points.length;
+
+	const interval_id = window.setInterval((context) => {
+		if ((loop_index * loop_size) < loop_limit) {
+			workers.smoother.postMessage(JSON.stringify({
+				'command': 'points',
+				'points': lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size))
+			}));
+			loop_index++;
+		} else {
+			window.clearInterval(interval_id);
+			workers.smoother.postMessage(JSON.stringify({
+				'command': 'start',
+				'bounds': [320, 160, 80, 40, 20],
+				'weights': [0.03, 0.07, 0.9],
+				'steps': 50
+			}));
+		}
+	}, 1, this);
 
 	//	Compute the smoothed racing line
 	// window.addEventListener('smoothed', function (event) {
@@ -488,16 +515,31 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 	}
 
 	workers.grapher.addEventListener('message', grapher_message);
-	workers.grapher.postMessage(JSON.stringify({
-		'command': 'start',
-		'data': lap_points,
-		'floor_path': 'coordinates.cartesian.smoothed',
-		'value_path': 'performance.speed',
-		'scale': 0.25,
-		'steps': 50,
-		'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
-		'value_function': graphs.offset_fill.name
-	}));
+
+	let loop_index = 0;
+	const loop_size = 50;
+	const loop_limit = lap_points.length;
+
+	const interval_id = window.setInterval((context) => {
+		if ((loop_index * loop_size) < loop_limit) {
+			workers.grapher.postMessage(JSON.stringify({
+				'command': 'points',
+				'points': lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size))
+			}));
+			loop_index++;
+		} else {
+			window.clearInterval(interval_id);
+			workers.grapher.postMessage(JSON.stringify({
+				'command': 'start',
+				'floor_path': 'coordinates.cartesian.smoothed',
+				'value_path': 'performance.speed',
+				'scale': 0.25,
+				'steps': 50,
+				'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
+				'value_function': graphs.offset_fill.name
+			}));
+		}
+	}, 1, this);
 }
 
 //	Start the Application

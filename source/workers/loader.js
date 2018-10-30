@@ -140,6 +140,7 @@ self.csv_to_object = function(csv) {
 			}));
 			loop_index++;
 		} else {
+			//	Clean up listeners in the main thread and stop the loop
 			self.clearInterval(interval_id);
 			self.postMessage(JSON.stringify({ 'command': 'terminate' }));
 		}
