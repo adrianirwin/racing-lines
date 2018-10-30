@@ -188,21 +188,24 @@ function data_loaded(files) {
 			'lap_boundaries': []
 		};
 
+		let parsed_message = null;
 		let loader_message = function (event) {
-			const message = JSON.parse(event.data);
+			parsed_message = JSON.parse(event.data);
 
-			switch (message.command) {
+			switch (parsed_message.command) {
 				case 'metadata':
-					loaded_values.bounds_coords = message.bounds_coords,
-					loaded_values.vector_to_center = message.vector_to_center,
-					loaded_values.lap_boundaries = message.lap_boundaries
+					loaded_values.bounds_coords = parsed_message.bounds_coords,
+					loaded_values.vector_to_center = parsed_message.vector_to_center,
+					loaded_values.lap_boundaries = parsed_message.lap_boundaries
 					break;
 
 				case 'points':
-					loaded_values.points = loaded_values.points.concat(message.points);
+					loaded_values.points = loaded_values.points.concat(parsed_message.points);
 					break;
 
 				case 'terminate':
+					parsed_message = undefined;
+
 					resolve(loaded_values);
 					utilities.clean_up_worker(workers.loader, loader_message, 'message');
 					break;
@@ -288,24 +291,28 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	});
 
+	let coords = null;
+
 	//	Draw raw GPS racing line
+	let parsed_message = null;
 	let grapher_message = function (event) {
-		const message = JSON.parse(event.data);
+		parsed_message = JSON.parse(event.data);
 
-		switch (message.command) {
+		switch (parsed_message.command) {
 			case 'point':
-
-				let coords = message.points.map(AFRAME.utils.coordinates.stringify);
+				coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify);
 				coords = coords.join(', ');
 				raw_line.setAttribute('racing_line', 'streamed_coords', coords);
-
 				break;
+
 			case 'terminate':
+				coords = undefined;
+				parsed_message = undefined;
+
 				utilities.clean_up_worker(workers.grapher, grapher_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion);
-
 				break;
 		}
 	}
@@ -351,30 +358,36 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 		colour: '#FF66FF'
 	});
 
+	let smoothed_coords = null;
+	let index = 0;
+
 	//	Run smoothing algorithm on current lap
+	let parsed_message = null;
 	let smoother_message = function (event) {
-		const message = JSON.parse(event.data);
+		parsed_message = JSON.parse(event.data);
 
-		switch (message.command) {
+		switch (parsed_message.command) {
 			case 'points':
-
-				let smoothed_coords = message.points.map(AFRAME.utils.coordinates.stringify);
+				smoothed_coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify);
 				smoothed_coords = smoothed_coords.join(', ');
 
 				smoothed_line.setAttribute('racing_line', 'streamed_coords', smoothed_coords);
 
 				//	Update the existing dataset
-				for (let index = 0, length = message.points.length; index < length; index++) {
-					_.set(lap_points, '[' + (_.get(message, 'index', 0) + index) + '].coordinates.cartesian.smoothed', message.points[index]);
+				for (index = 0, length = parsed_message.points.length; index < length; index++) {
+					_.set(lap_points, '[' + (_.get(parsed_message, 'index', 0) + index) + '].coordinates.cartesian.smoothed', parsed_message.points[index]);
 				}
-
 				break;
+
 			case 'terminate':
+				smoothed_coords = undefined;
+				index = undefined;
+				parsed_message = undefined;
+
 				utilities.clean_up_worker(workers.smoother, smoother_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_graphs(lap_points, up_vector, reorientation_quaternion);
-
 				break;
 		}
 	}
@@ -481,34 +494,50 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	});
 
-	//	Draw speed graph
-	let grapher_message = function (event) {
-		const message = JSON.parse(event.data);
+	let value_points = null;
+	let floor_points = null;
+	let filled_coords = null;
+	let line_coords = null;
+	let ordered_points = [];
 
-		switch (message.command) {
+	let index = 0
+
+	//	Draw speed graph
+	let parsed_message = null;
+	let grapher_message = function (event) {
+		parsed_message = JSON.parse(event.data);
+
+		switch (parsed_message.command) {
 			case 'point':
 				//	"Grow" the graphed line
-				const value_points = message.points.values;
-				const floor_points = message.points.floors;
+				value_points = parsed_message.points.values;
+				floor_points = parsed_message.points.floors;
 
 				//	Set the order of the points for the filled surface
-				const ordered_points = [];
-				for (let index = 0, length = value_points.length; index < length; index++) {
+				ordered_points = [];
+				for (index = 0, length = value_points.length; index < length; index++) {
 					ordered_points.push(floor_points[index]);
 					ordered_points.push(value_points[index]);
 				}
 
-				let filled_coords = ordered_points.map(AFRAME.utils.coordinates.stringify);
+				filled_coords = ordered_points.map(AFRAME.utils.coordinates.stringify);
 				filled_coords = filled_coords.join(', ');
 
-				let line_coords = value_points.map(AFRAME.utils.coordinates.stringify);
+				line_coords = value_points.map(AFRAME.utils.coordinates.stringify);
 				line_coords = line_coords.join(', ');
 
 				graphed_line.setAttribute('filled_graph', 'streamed_coords', filled_coords);
 				graphed_line.setAttribute('line_graph', 'streamed_coords', line_coords);
-
 				break;
+
 			case 'terminate':
+				value_points = undefined;
+				floor_points = undefined;
+				filled_coords = undefined;
+				line_coords = undefined;
+
+				parsed_message = undefined;
+
 				utilities.clean_up_worker(workers.grapher, grapher_message, 'message');
 				break;
 		}
