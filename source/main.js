@@ -2,6 +2,7 @@
 import * as AFRAME from 'aframe';
 import * as _ from 'lodash';
 import * as parser from './parser';
+import * as loader from './loader';
 import * as references from './references';
 import * as utilities from './utilities';
 import * as graphs from './graphs';
@@ -44,9 +45,17 @@ function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
 function start_web_ui() {
 	window.console.log('start_web_ui');
 
-	data_input($('input[name="log_file"]'), data_loaded);
-
+	file_add_listener();
 	start_vr_scene();
+}
+
+function file_add_listener() {
+	loader.add_listener(workers.loader, document.querySelector('input[name="log_file"]'), file_finished_loading);
+}
+
+function file_finished_loading(values) {
+	render_racing_line(values);
+	file_add_listener();
 }
 
 function start_vr_ui() {
@@ -81,10 +90,6 @@ function start_vr_scene() {
 	window.console.log('start_vr_scene');
 
 	const scene = document.querySelector('a-scene');
-	// window.console.info(scene);
-
-	const camera = document.querySelector('a-entity[camera]');
-	// window.console.info(camera);
 
 	//	Ground Plane Grid
 	const ground_plane = document.createElement('a-entity');
@@ -93,31 +98,8 @@ function start_vr_scene() {
 	ground_plane.object3D.rotation.x += (-90 * (Math.PI / 180));
 	scene.appendChild(ground_plane);
 
-	//	Test container
-	// const group = document.createElement('a-entity');
-	// group.setAttribute('id', 'monkey');
-	// scene.appendChild(group);
-
-	//	Add test text
-	// const text = document.createElement('a-entity');
-	// text.setAttribute('id', 'test_text');
-	// text.setAttribute('position', '0 0 -10');
-	// text.setAttribute('text', {
-	// 	'width': 2,
-	// 	'color': 'red',
-	// 	'value': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam'
-	// });
-	// scene.appendChild(text);
-
-	//	Monkey for grip/rotate test
-	// const monkey = document.createElement('a-entity');
-	// monkey.setAttribute('position', '0 0 0');
-	// monkey.setAttribute('gltf-model', 'url(/assets/monkey.gltf)');
-	// monkey.setAttribute('id', 'monkey');
-	// group.appendChild(monkey);
-
-	//	TEST
-	// const hand_controls_left = document.createElement('a-entity');
+	//	Oculus Touch Controllers
+	//	TODO: Handle Phone, Desktop, 3DOF, and 6DOF inputs
 	const hand_controls_left = document.createElement('a-entity');
 	const hand_controls_right = document.createElement('a-entity');
 
@@ -126,138 +108,29 @@ function start_vr_scene() {
 	hand_controls_left.setAttribute('id', 'left_hand');
 	hand_controls_right.setAttribute('id', 'right_hand');
 
-	// hand_controls_right.setAttribute('super-hands', '');
-	// hand_controls_right.setAttribute('sphere-collider', {'objects': 'a-box'});
-
-	// hand_controls_left.setAttribute('hand-controls', {'hand': 'left'});
-	// hand_controls_right.setAttribute('hand-controls', {'hand': 'right'});
-
 	scene.appendChild(hand_controls_left);
 	scene.appendChild(hand_controls_right);
 
-	// hand_controls_right.addEventListener('gripdown', function (event) {
-	// 	// var monkey = document.querySelector('#monkey');
-	// 	// var quaternion = event.target.object3D.quaternion;
-	// 	// window.console.info('griptouchend A', event, event.target.object3D.quaternion);
-	// 	// window.console.info('griptouchend B', monkey.object3D);
-	// 	// window.console.info('griptouchend', event);
-	// 	// monkey.object3D.setRotationFromQuaternion(quaternion);
-
-	// 	window.test_tick();
-		
-	// });
-
-	// hand_controls_left.addEventListener('gripdown', function (event) {
-	// 	window.console.info('gripdown', event);
-	// 	document.querySelector('#monkey').setAttribute('grabbable', '');
-	// });
-
-	// hand_controls_left.addEventListener('gripup', function (event) {
-	// 	window.console.info('gripup', event);
-	// 	document.querySelector('#monkey').removeAttribute('grabbable');
-	// });
-	
-
-	// window.console.info(hand_controls_left);
-	// window.console.info(hand_controls_right);
-	// <a-entity hand-controls="left"></a-entity>
-	// <a-entity hand-controls="right"></a-entity>
-
-	// <a-entity oculus-touch-controls="hand: left"></a-entity>
-	// <a-entity oculus-touch-controls="hand: right"></a-entity>
-}
-
-function data_input($input, callback) {
-	window.console.log('data_input');
-
-	$input.on('change', function (event) {
-		callback($input.prop('files'));
+	//	Model position correction
+	//	TODO: This is a hack, just PR it back into A-Frame itself
+	hand_controls_left.addEventListener('object3dset', function (event) {
+		window.setTimeout((hand_controls_left, hand_controls_right) => {
+			hand_controls_left.components['obj-model'].model.position.copy(new THREE.Vector3(-0.006, 0.004, -0.053));
+			hand_controls_right.components['obj-model'].model.position.copy(new THREE.Vector3(0.006, 0.004, -0.053));
+		}, 250, hand_controls_left, hand_controls_right);
 	});
 }
 
-function data_loaded(files) {
-	window.console.log('data_loaded');
-
-	//	Process all of the newly loaded data
-	new Promise((resolve, reject) => {
-
-		const loaded_values = {
-			'points': [],
-			'bounds_coords': {},
-			'vector_to_center': [],
-			'lap_boundaries': []
-		};
-
-		let parsed_message = null;
-		let loader_message = function (event) {
-			parsed_message = JSON.parse(event.data);
-
-			switch (parsed_message.command) {
-				case 'metadata':
-					loaded_values.bounds_coords = parsed_message.bounds_coords,
-					loaded_values.vector_to_center = parsed_message.vector_to_center,
-					loaded_values.lap_boundaries = parsed_message.lap_boundaries
-					break;
-
-				case 'points':
-					loaded_values.points = loaded_values.points.concat(parsed_message.points);
-					break;
-
-				case 'terminate':
-					parsed_message = undefined;
-
-					resolve(loaded_values);
-					utilities.clean_up_worker(workers.loader, loader_message, 'message');
-					break;
-			}
-		}
-
-		workers.loader.addEventListener('message', loader_message);
-		workers.loader.postMessage(files);
-
-	}).then(function(values) {
-
-		render_racing_line(values.points, values.bounds_coords, values.vector_to_center, values.lap_boundaries);
-
-	});
-}
-
-function render_racing_line(racing_line_points, bounds_coords, vector_to_center, lap_boundaries) {
+function render_racing_line(values) {
 	window.console.log('render_racing_line');
+
+	const racing_line_points = values.points;
+	const bounds_coords = values.bounds_coords;
+	const vector_to_center = values.vector_to_center;
+	const lap_boundaries = values.lap_boundaries;
 
 	//	TODO: Set dynamically/allow user input?
 	const scaling_factor =			0.01;
-
-	//	Select and create elements
-	const scene =					document.querySelector('a-scene');
-	const racing_line =				document.createElement('a-entity');
-	const raw_line =				document.createElement('a-entity');
-	// const smoothed0_points =		document.createElement('a-entity');
-	// const smoothed1_points =		document.createElement('a-entity');
-	// const smoothed2_points =		document.createElement('a-entity');
-	// const smoothed3_points =		document.createElement('a-entity');
-	// const smoothed4_points =		document.createElement('a-entity');
-	// const smoothed5_points =		document.createElement('a-entity');
-	// const smoothing_inspector =		document.createElement('a-entity');
-
-	//	Place the racing line in the scene
-	racing_line.appendChild(raw_line);
-	scene.appendChild(racing_line);
-	// scene.appendChild(smoothed0_points);
-	// scene.appendChild(smoothed1_points);
-	// scene.appendChild(smoothed2_points);
-	// scene.appendChild(smoothed3_points);
-	// scene.appendChild(smoothed4_points);
-	// scene.appendChild(smoothed5_points);
-	// scene.appendChild(smoothing_inspector);
-
-	//	TODO: Replace with swizzle function to set correct Z?
-	racing_line.object3D.rotation.x += (-90 * (Math.PI / 180));
-	racing_line.setAttribute('scale', (scaling_factor + ' ' + scaling_factor + ' ' + scaling_factor));
-	racing_line.setAttribute('position', '0.0 1.0 -1.0');
-	racing_line.setAttribute('id', 'racing_line');
-
-	raw_line.setAttribute('position', '0.0 0.0 -1.0');
 
 	//	Trim the data to speed up development
 	const first_lap =				racing_line_points.slice(0, lap_boundaries[0]);
@@ -284,6 +157,23 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 	var reorientation_quaternion =	new THREE.Quaternion();
 	reorientation_quaternion.setFromAxisAngle(v3_cross, angle);
 
+	//	Select and create elements
+	const scene =					document.querySelector('a-scene');
+	const racing_line =				document.createElement('a-entity');
+	const raw_line =				document.createElement('a-entity');
+
+	//	Place the racing line in the scene
+	racing_line.appendChild(raw_line);
+	scene.appendChild(racing_line);
+
+	//	TODO: Replace with swizzle function to set correct Z?
+	racing_line.object3D.rotation.x += (-90 * (Math.PI / 180));
+	racing_line.setAttribute('scale', (scaling_factor + ' ' + scaling_factor + ' ' + scaling_factor));
+	racing_line.setAttribute('position', '0.0 1.0 -1.0');
+	racing_line.setAttribute('id', 'racing_line');
+
+	raw_line.setAttribute('position', '0.0 0.0 -1.0');
+
 	//	Assign the racing line component to the raw and smoother line entities
 	raw_line.setAttribute('racing_line', {
 		coords: '',
@@ -291,9 +181,8 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	});
 
-	let coords = null;
-
 	//	Draw raw GPS racing line
+	let coords = null;
 	let parsed_message = null;
 	let grapher_message = function (event) {
 		parsed_message = JSON.parse(event.data);
@@ -316,9 +205,9 @@ function render_racing_line(racing_line_points, bounds_coords, vector_to_center,
 				break;
 		}
 	}
-
 	workers.grapher.addEventListener('message', grapher_message);
 
+	//	Iteratively feed in the raw coordinates to the graphing worker
 	let loop_index = 0;
 	const loop_size = 200;
 	const loop_limit = second_lap_test.length;
@@ -391,9 +280,9 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 				break;
 		}
 	}
-
 	workers.smoother.addEventListener('message', smoother_message);
 
+	//	Iteratively feed in the points to the smoothing worker
 	let loop_index = 0;
 	const loop_size = 100;
 	const loop_limit = lap_points.length;
@@ -415,62 +304,6 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 			}));
 		}
 	}, 1, this);
-
-	//	Compute the smoothed racing line
-	// window.addEventListener('smoothed', function (event) {
-	// 	let coords = smoothed_line.getAttribute('racing_line').coords;
-	// 	coords.push(event.detail.point);
-	// 	coords = coords.map(AFRAME.utils.coordinates.stringify);
-	// 	coords = coords.join(', ');
-	// 	smoothed_line.setAttribute('racing_line', 'coords', coords);
-	// }, false);
-	// parser.smooth(lap_points, [320, 160, 80, 40, 20], [0.03, 0.07, 0.9], false, 15, window, 'smoothed');
-
-	// smoothed0_points.setAttribute('racing_dots', {
-	// 	coords: parser.coords_to_string(smoothed_points[0]),
-	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
-	// 	colour: '#880000'
-	// });
-
-	// smoothed1_points.setAttribute('racing_dots', {
-	// 	coords: parser.coords_to_string(smoothed_points[1]),
-	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
-	// 	colour: '#BB0044'
-	// });
-
-	// smoothed2_points.setAttribute('racing_dots', {
-	// 	coords: parser.coords_to_string(smoothed_points[2]),
-	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
-	// 	colour: '#FF0088'
-	// });
-
-	// smoothed3_points.setAttribute('racing_dots', {
-	// 	coords: parser.coords_to_string(smoothed_points[3]),
-	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
-	// 	colour: '#FF44BB'
-	// });
-
-	// smoothed4_points.setAttribute('racing_dots', {
-	// 	coords: parser.coords_to_string(smoothed_points[4]),
-	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
-	// 	colour: '#FF88FF'
-	// });
-
-	// smoothed5_points.setAttribute('racing_dots', {
-	// 	coords: parser.coords_to_string(smoothed_points[5]),
-	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
-	// 	colour: '#FFFFFF'
-	// });
-
-	// smoothing_inspector.setAttribute('smoothing_inspector', {
-	// 	coords0: parser.coords_to_string(smoothed_points[0]),
-	// 	coords1: parser.coords_to_string(smoothed_points[1]),
-	// 	coords2: parser.coords_to_string(smoothed_points[2]),
-	// 	coords3: parser.coords_to_string(smoothed_points[3]),
-	// 	coords4: parser.coords_to_string(smoothed_points[4]),
-	// 	coords5: parser.coords_to_string(smoothed_points[5]),
-	// 	reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
-	// });
 }
 
 function render_graphs(lap_points, up_vector, reorientation_quaternion) {
@@ -494,6 +327,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
 	});
 
+	//	Draw speed graph
 	let value_points = null;
 	let floor_points = null;
 	let filled_coords = null;
@@ -502,7 +336,6 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 
 	let index = 0
 
-	//	Draw speed graph
 	let parsed_message = null;
 	let grapher_message = function (event) {
 		parsed_message = JSON.parse(event.data);
@@ -542,9 +375,9 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 				break;
 		}
 	}
-
 	workers.grapher.addEventListener('message', grapher_message);
 
+	//	Iteratively feed in the smoothed points and performance data to the graphing worker
 	let loop_index = 0;
 	const loop_size = 50;
 	const loop_limit = lap_points.length;
