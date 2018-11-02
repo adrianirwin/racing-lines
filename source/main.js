@@ -45,17 +45,17 @@ function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
 function start_web_ui() {
 	window.console.log('start_web_ui');
 
-	file_add_listener();
+	allow_file_upload();
 	start_vr_scene();
 }
 
-function file_add_listener() {
+function allow_file_upload() {
 	loader.add_listener(workers.loader, document.querySelector('input[name="log_file"]'), file_finished_loading);
 }
 
 function file_finished_loading(values) {
 	render_racing_line(values);
-	file_add_listener();
+	allow_file_upload();
 }
 
 function start_vr_ui() {
