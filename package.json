@@ -6,12 +6,13 @@
 	"author": "Adrian Irwin",
 	"license": "MIT",
 	"dependencies": {
-		"aframe": "^0.8.2",
+		"aframe": "^1.6.0",
 		"babel-preset-env": "^1.7.0",
 		"geodetic-to-ecef": "^1.2.0",
 		"jquery": "^3.3.1",
 		"lodash": "^4.17.10",
 		"papaparse": "^4.6.0",
+		"sass": "^1.80.6",
 		"three": "^0.97.0"
 	},
 	"devDependencies": {
@@ -19,7 +20,6 @@
 		"babelify": "^9.0.0",
 		"css-loader": "^0.28.11",
 		"hard-source-webpack-plugin": "^0.7.6",
-		"node-sass": "^4.9.3",
 		"remove-files-webpack-plugin": "^1.0.0",
 		"sass-loader": "^7.1.0",
 		"style-loader": "^0.21.0",
