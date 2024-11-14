@@ -1,6 +1,5 @@
 const path = require('path');
 const webpack = require('webpack');
-const HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
 const RemovePlugin = require('remove-files-webpack-plugin');
 
 module.exports = {
@@ -11,28 +10,20 @@ module.exports = {
 	entry: './source/main.js',
 	output: {
 		filename: 'bundle.js',
-		path: path.resolve(__dirname, 'dist')
+		path: path.resolve(__dirname, 'dist'),
 	},
 	module: {
 		rules: [
 			{
-				test: /\.(s*)css$/,
-				use: ['style-loader', 'css-loader', 'sass-loader']
+				test: /\.scss/,
+				use: ['style-loader', 'css-loader', 'sass-loader'],
 			},
-			{
-				test: /\.js$/,
-				include: [
-					path.resolve(__dirname, "./source/workers")
-				],
-				use: { loader: 'worker-loader' }
-			}
 		]
 	},
 	plugins: [
-		new HardSourceWebpackPlugin(),
 		new webpack.ProvidePlugin({
 			$: 'jquery',
-			jQuery: 'jquery'
+			jQuery: 'jquery',
 		}),
 		new RemovePlugin({
 			before: {
@@ -48,5 +39,10 @@ module.exports = {
 				]
 			}
 		})
-	]
+	],
+	resolve: {
+		alias: {
+			'three': path.resolve('node_modules', 'three'),
+		}
+	},
 };

@@ -7,25 +7,23 @@
 	"license": "MIT",
 	"dependencies": {
 		"aframe": "^1.6.0",
-		"babel-preset-env": "^1.7.0",
+		"babel-preset-env": "^0.0.0",
 		"geodetic-to-ecef": "^1.2.0",
-		"jquery": "^3.3.1",
-		"lodash": "^4.17.10",
-		"papaparse": "^4.6.0",
-		"sass": "^1.80.6",
-		"three": "^0.97.0"
+		"jquery": "^3.7.1",
+		"lodash": "^4.17.21",
+		"papaparse": "^5.4.1",
+		"three": "^0.170.0"
 	},
 	"devDependencies": {
-		"@babel/core": "^7.0.0",
-		"babelify": "^9.0.0",
-		"css-loader": "^0.28.11",
-		"hard-source-webpack-plugin": "^0.7.6",
-		"remove-files-webpack-plugin": "^1.0.0",
-		"sass-loader": "^7.1.0",
-		"style-loader": "^0.21.0",
-		"webpack": "^4.17.1",
-		"webpack-cli": "^3.1.0",
-		"worker-loader": "^2.0.0"
+		"@babel/core": "^7",
+		"babelify": "^10",
+		"css-loader": "^7",
+		"remove-files-webpack-plugin": "^1.5.0",
+		"sass": "^1.80.6",
+		"sass-loader": "^16",
+		"style-loader": "^4",
+		"webpack": "^5",
+		"webpack-cli": "^5"
 	},
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",

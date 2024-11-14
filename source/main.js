@@ -10,21 +10,18 @@ import * as graphs from './graphs';
 //	Custom A-Frame Components
 import './aframe/components';
 
-//	Web Workers
-import Loader from './workers/loader.js';
-import Smoother from './workers/smoother.js';
-import Grapher from './workers/grapher.js';
-
 //	Styles
 import './styles/main.scss';
 
+//	Web Workers
+const workers = {
+	loader: new Worker(new URL('./workers/loader.js', import.meta.url)),
+	smoother: new Worker(new URL('./workers/smoother.js', import.meta.url)),
+	grapher: new Worker(new URL('./workers/grapher.js', import.meta.url)),
+};
+
 //	Globals
 const vr_ui_elements = [];
-const workers = {
-	loader: Loader(),
-	smoother: Smoother(),
-	grapher: Grapher()
-};
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback, callback_vr_enter, callback_vr_exit) {
