@@ -21,37 +21,46 @@ AFRAME.registerComponent('ground_plane', {
 	init: function () {
 		const self = this;
 
+		self.ground_plane_dots_geometry = new THREE.BufferGeometry();
+
+		const total_points = ((self.data.count + 1) * (self.data.count + 1)); // Adds a center point
+		const span = (self.data.gap * self.data.count) / 2;
+		const maximum_distance = (new THREE.Line3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(span, 0, 0))).distance();
+
+		const vertices = [];
+		const colours = [];
+
 		const temp_colour_clamp = new THREE.Color(0x353638);
+		const origin = new THREE.Vector3(0, 0, 0);
+		let point = null;
+		let vector_origin_to_point = null;
+		let factor = null;
+		let colour = null;
 
-		// self.ground_plane_dots_material = new THREE.PointsMaterial({ color: self.data.colour, size: self.data.size, sizeAttenuation: true });
-		self.ground_plane_dots_material = new THREE.PointsMaterial({ vertexColors: THREE.VertexColors, size: self.data.size });
+		for (let x = -span; x <= span; x += self.data.gap) {
+			for (let z = -span; z <= span; z += self.data.gap) {
+				vertices.push(x, 0, z);
+				point = new THREE.Vector3(x, 0, z);
 
-		self.ground_plane_dots_geometry = new THREE.Geometry();
+				vector_origin_to_point = new THREE.Line3(origin, point);
+				factor = Math.abs(Math.min((vector_origin_to_point.distance() / maximum_distance), 1) - 1);
 
-		let span = (self.data.gap * self.data.count) / 2;
-		let total_points = ((self.data.count + 1) * (self.data.count + 1));
-		let maximum_distance = (new THREE.Line3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(span, 0, 0))).distance();
-
-		for (var x = -span; x <= span; x += self.data.gap) {
-			for (var y = -span; y <= span; y += self.data.gap) {
-				self.ground_plane_dots_geometry.vertices.push(new THREE.Vector3(x, y, 0));
+				colours.push(
+					Math.max((0.4 * factor), temp_colour_clamp.r),
+					Math.max((0.45 * factor), temp_colour_clamp.g),
+					Math.max((0.65 * factor), temp_colour_clamp.b),
+				);
 			}
 		}
 
-		for (var c = 0; c < total_points; c++) {
-			let point = new THREE.Vector3(self.ground_plane_dots_geometry.vertices[c].x, self.ground_plane_dots_geometry.vertices[c].y, 0);
-			let vector_to_point = new THREE.Line3(new THREE.Vector3(0, 0, 0), point);
-			let factor = Math.abs(Math.min((vector_to_point.distance() / maximum_distance), 1) - 1);
-			let colour = new THREE.Color(
-				Math.max((0.4 * factor), temp_colour_clamp.r),
-				Math.max((0.45 * factor), temp_colour_clamp.g),
-				Math.max((0.65 * factor), temp_colour_clamp.b)
-			);
+		self.ground_plane_dots_geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+		self.ground_plane_dots_geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colours), 3))
 
-			self.ground_plane_dots_geometry.colors.push(colour);
-		}
-
-		self.ground_plane_dots = new THREE.Points(self.ground_plane_dots_geometry, self.ground_plane_dots_material);
+		self.ground_plane_dots = new THREE.Points(
+			self.ground_plane_dots_geometry,
+			new THREE.PointsMaterial({ vertexColors: true, size: self.data.size, sizeAttenuation: true }),
+		);
+		
 		self.el.setObject3D('ground_plane_dots', self.ground_plane_dots);
 	},
 
@@ -119,7 +128,7 @@ AFRAME.registerComponent('racing_line', {
 		self.start_finish_points = [];
 
 		//	Geometry
-		self.racing_line_geometry = (self.will_grow === true)? new THREE.BufferGeometry(): new THREE.Geometry();
+		self.racing_line_geometry = (self.will_grow === true)? new THREE.BufferGeometry(): new THREE.BufferGeometry();
 		if (self.will_grow === true) {
 			//	There seems to be something amiss with the update call that causes it to miss every other addition
 			self.vertices_count = 0;
@@ -168,7 +177,7 @@ AFRAME.registerComponent('racing_line', {
 		if (self.will_grow === true) {
 			//	Create start/finish lines
 			self.start_finish_points.forEach(function (point, index) {
-				const start_finish_geometry =	new THREE.Geometry();
+				const start_finish_geometry =	new THREE.BufferGeometry();
 				start_finish_geometry.vertices.push(point);
 				start_finish_geometry.vertices.push(new THREE.Vector3((point.x + 20), (point.y + 20), point.z));
 				self.el.setObject3D(('start_finish_line_' + index), new THREE.Line(start_finish_geometry, self.start_finish_material));
@@ -525,7 +534,7 @@ AFRAME.registerComponent('racing_dots', {
 		self.start_finish_points = [];
 
 		//	Create the racing line
-		self.racing_dots_geometry = new THREE.Geometry();
+		self.racing_dots_geometry = new THREE.BufferGeometry();
 		self.racing_dots = new THREE.Points(self.racing_dots_geometry, self.racing_dots_material);
 		self.el.setObject3D('racing_dots', self.racing_dots);
 
@@ -646,7 +655,7 @@ AFRAME.registerComponent('smoothing_inspector', {
 		self.start_finish_points = [];
 
 		//	Create the racing line
-		self.smoothing_geometry = new THREE.Geometry();
+		self.smoothing_geometry = new THREE.BufferGeometry();
 		self.smoothing_line_segments = new THREE.LineSegments(self.smoothing_geometry, self.smoothing_material);
 		self.el.setObject3D('smoothing_inspector', self.smoothing_line_segments);
 
@@ -687,34 +696,34 @@ AFRAME.registerComponent('smoothing_inspector', {
 	}
 });
 
-AFRAME.registerComponent('grabbable', {
-	schema: {
-		hand: {type: 'selector', default: '#left_hand'}
-	},
-	init: function () {
-		const self = this;
+// AFRAME.registerComponent('grabbable', {
+// 	schema: {
+// 		hand: {type: 'selector', default: '#left_hand'}
+// 	},
+// 	init: function () {
+// 		const self = this;
 
-		window.console.info('grabbable', self, self.data.hand);
+// 		window.console.info('grabbable', self, self.data.hand);
 
 
-		window.console.info(self.el);
-		self.hand = self.data.hand;
-		self.thumbstick = _.get(self.hand, 'components["tracked-controls"].axis', null);
-		self.el.setAttribute('rotation', { x: 0, y: 0, z: 0 });
-	},
+// 		window.console.info(self.el);
+// 		self.hand = self.data.hand;
+// 		self.thumbstick = _.get(self.hand, 'components["tracked-controls"].axis', null);
+// 		self.el.setAttribute('rotation', { x: 0, y: 0, z: 0 });
+// 	},
 
-	tick: function (time, timeDelta) {
-		const self = this;
+// 	tick: function (time, timeDelta) {
+// 		const self = this;
 
-		if (self.thumbstick !== null) {
-			window.console.info(Math.round(time), self.thumbstick[0], self.thumbstick[1]);
+// 		if (self.thumbstick !== null) {
+// 			window.console.info(Math.round(time), self.thumbstick[0], self.thumbstick[1]);
 
-			const rotation = self.el.getAttribute('rotation', { x: 0, y: 0, z: 0 });
-			rotation.y += (self.thumbstick[0] * 10);
-			self.el.setAttribute('rotation', rotation);
-			// this.el.setAttribute();
-		}
-	}
-});
+// 			const rotation = self.el.getAttribute('rotation', { x: 0, y: 0, z: 0 });
+// 			rotation.y += (self.thumbstick[0] * 10);
+// 			self.el.setAttribute('rotation', rotation);
+// 			// this.el.setAttribute();
+// 		}
+// 	}
+// });
 
 export {};

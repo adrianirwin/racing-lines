@@ -92,7 +92,6 @@ function start_vr_scene() {
 	const ground_plane = document.createElement('a-entity');
 	ground_plane.setAttribute('ground_plane', {'count': 150, 'gap': 1, 'size': 0.025});
 	ground_plane.setAttribute('position', '0 -1.5 0');
-	ground_plane.object3D.rotation.x += (-90 * (Math.PI / 180));
 	scene.appendChild(ground_plane);
 
 	//	Oculus Touch Controllers
