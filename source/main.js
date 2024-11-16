@@ -187,6 +187,7 @@ function render_racing_line(values) {
 			case 'point':
 				coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify);
 				coords = coords.join(', ');
+
 				raw_line.setAttribute('racing_line',  { streamed_coords: coords, streamed_index: parsed_message.index });
 				break;
 
@@ -256,7 +257,7 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 				smoothed_coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify);
 				smoothed_coords = smoothed_coords.join(', ');
 
-				smoothed_line.setAttribute('racing_line', 'streamed_coords', smoothed_coords);
+				smoothed_line.setAttribute('racing_line', { streamed_coords: smoothed_coords, streamed_index: parsed_message.index });
 
 				//	Update the existing dataset
 				for (index = 0, length = parsed_message.points.length; index < length; index++) {

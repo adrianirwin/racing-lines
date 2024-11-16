@@ -37,7 +37,6 @@ self.graph = function(points, floor_path, value_path, scale, steps, offset_vecto
 	for (let index = 0, length = points.length; index < length; index += steps) {
 		self.postMessage(JSON.stringify({
 			'command': 'point',
-			'index': index,
 			'points': value_function(
 				_.map(points, floor_path),
 				_.map(points, value_path),
