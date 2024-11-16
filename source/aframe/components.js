@@ -88,31 +88,27 @@ AFRAME.registerComponent('racing_line', {
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		streamed_coords: {
-			parse: function (value) {
-				if (_.isEmpty(value) === false && _.isString(value) === true) {
-					return value.split(',').map(AFRAME.utils.coordinates.parse);
-				} else {
-					return [];
-				}
-			},
-			default: []
+			type: 'string', default: '',
+		},
+		streamed_index: {
+			type: 'number', default: 0,
 		},
 		lap_boundaries: {
-			type: 'array', default: [0]
+			type: 'array', default: [0],
 		},
 		lap_offset_length: {
-			type: 'number', default: 10
+			type: 'number', default: 10,
 		},
 		length: {
-			type: 'number', default: 0
+			type: 'number', default: 0,
 		},
 		reorientation_quaternion: {
-			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0}
-		}
+			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0},
+		},
 	},
 
 	init: function () {
@@ -122,20 +118,21 @@ AFRAME.registerComponent('racing_line', {
 		self.will_grow = (self.data.length > 0)? true: false;
 
 		//	Materials
-		self.racing_line_material = new THREE.LineBasicMaterial({ color: self.data.colour });
-		self.start_finish_material = new THREE.LineBasicMaterial({ color: '#FFFF00' });
+		self.racing_line_material = new THREE.LineBasicMaterial({ color: self.data.colour, linewidth: 1 });
+		self.start_finish_material = new THREE.LineBasicMaterial({ color: '#FFFF00', linewidth: 1 });
 
 		self.start_finish_points = [];
 
 		//	Geometry
-		self.racing_line_geometry = (self.will_grow === true)? new THREE.BufferGeometry(): new THREE.BufferGeometry();
+		self.racing_line_geometry = new THREE.BufferGeometry();
 		if (self.will_grow === true) {
 			//	There seems to be something amiss with the update call that causes it to miss every other addition
+			//	TODO: ^^ This may no longer be the case
 			self.vertices_count = 0;
 
-			self.positions = new Float32Array(self.data.length * 3);
-			self.racing_line_geometry.addAttribute('position', new THREE.BufferAttribute(self.positions, 3));
-			self.racing_line_geometry.setDrawRange(0, self.data.coords.length);
+			self.positions = new Float32Array(self.data.length * 3); // TODO - This may not be the best way to do this
+			self.racing_line_geometry.setAttribute('position', new THREE.BufferAttribute(self.positions, 3));
+			self.racing_line_geometry.setDrawRange(0, 0);
 		}
 
 		//	Create the racing line
@@ -143,6 +140,7 @@ AFRAME.registerComponent('racing_line', {
 		self.el.setObject3D('racing_line', self.racing_line);
 
 		//	Plot racing line vertices
+		// TODO - This may not be the best way to do this
 		let lap_offset_increment = 0;
 		self.data.coords.forEach((point, index) => {
 			if (self.will_grow === true) {
@@ -161,7 +159,7 @@ AFRAME.registerComponent('racing_line', {
 
 		//	The original GPS data is stored as lat/long, after
 		//	converting to cartesian coordinates, the 'up' vector is
-		//	still correct in 'globe' space. This applies the calculated
+		//	still correct in 'globe/spherical' space. This applies the calculated
 		//	rotation transformation to the racing line geometry,
 		//	so 'up' for subsequent operations is now Z+.
 		const rotation_matrix = new THREE.Matrix4();
@@ -172,12 +170,12 @@ AFRAME.registerComponent('racing_line', {
 			self.data.reorientation_quaternion.w
 		);
 		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
-		self.racing_line_geometry.applyMatrix(rotation_matrix);	
+		self.racing_line_geometry.applyMatrix4(rotation_matrix);
 
 		if (self.will_grow === true) {
 			//	Create start/finish lines
 			self.start_finish_points.forEach(function (point, index) {
-				const start_finish_geometry =	new THREE.BufferGeometry();
+				const start_finish_geometry = new THREE.BufferGeometry();
 				start_finish_geometry.vertices.push(point);
 				start_finish_geometry.vertices.push(new THREE.Vector3((point.x + 20), (point.y + 20), point.z));
 				self.el.setObject3D(('start_finish_line_' + index), new THREE.Line(start_finish_geometry, self.start_finish_material));
@@ -188,16 +186,17 @@ AFRAME.registerComponent('racing_line', {
 	update: function (oldData) {
 		const self = this;
 
-		// if (
-		// 	self.will_grow === true
-		// 	&& _.isEmpty(oldData.coords) === false
-		// 	&& _.isEmpty(self.data.coords) === false
-		// ) {
 		if (_.isEmpty(self.data.streamed_coords) === false) {
-			// const diff = self.data.coords.slice(self.vertices_count);
+			const position = self.racing_line_geometry.getAttribute('position');
 
-			_.forEach(self.data.streamed_coords, (point, index) => {
-				const vertex = new THREE.Vector3(point.x, point.y, point.z);
+			const streamed_coords = self.data.streamed_coords.split(',').map((coords) => AFRAME.utils.coordinates.parse(coords));
+
+			let position_index = null;
+			_.forEach(streamed_coords, (coords, coords_index) => {
+
+				position_index = (self.data.streamed_index + coords_index) * 3;
+
+				const vertex = new THREE.Vector3(coords.x, coords.y, coords.z);
 				const reorientation_quaternion = new THREE.Quaternion(
 					self.data.reorientation_quaternion.x,
 					self.data.reorientation_quaternion.y,
@@ -206,16 +205,12 @@ AFRAME.registerComponent('racing_line', {
 				);
 				vertex.applyQuaternion(reorientation_quaternion);
 
-				const position = (self.vertices_count * 3);
-
-				self.positions[(position)] = vertex.x;
-				self.positions[(position + 1)] = vertex.y;
-				self.positions[(position + 2)] = vertex.z;
-
-				self.vertices_count++;
+				position.array[(position_index + 0)] = vertex.x;
+				position.array[(position_index + 1)] = vertex.y;
+				position.array[(position_index + 2)] = vertex.z;
 			});
 
-			self.racing_line_geometry.setDrawRange(0, self.vertices_count);
+			self.racing_line_geometry.setDrawRange(0, (self.data.streamed_index * 3) + ((streamed_coords.length - 1) * 3));
 			self.racing_line_geometry.attributes.position.needsUpdate = true;
 			self.racing_line_geometry.computeBoundingSphere();
 		}
@@ -279,7 +274,7 @@ AFRAME.registerComponent('line_graph', {
 		self.point_count = 0;
 
 		self.value_positions = new Float32Array(self.data.length * 3);
-		self.value_geometry.addAttribute('position', new THREE.BufferAttribute(self.value_positions, 3));
+		self.value_geometry.setAttribute('position', new THREE.BufferAttribute(self.value_positions, 3));
 
 		//	Create the value line
 		self.value_line = new THREE.Line(self.value_geometry, self.value_material);
@@ -310,7 +305,7 @@ AFRAME.registerComponent('line_graph', {
 			self.data.reorientation_quaternion.w
 		);
 		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
-		self.value_geometry.applyMatrix(rotation_matrix);
+		self.value_geometry.applyMatrix4(rotation_matrix);
 	},
 
 	update: function (oldData) {
@@ -418,7 +413,7 @@ AFRAME.registerComponent('filled_graph', {
 		self.indicies_per_segment = 6;
 
 		self.fill_positions = new Float32Array(self.data.length * self.indicies_per_segment);
-		self.fill_geometry.addAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
+		self.fill_geometry.setAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
 
 		self.fill_indicies = new Uint32Array((self.data.length - 1) * self.indicies_per_segment);
 		for (let i = 0, l = (self.data.length - 1); i < l; i++) {
@@ -460,7 +455,7 @@ AFRAME.registerComponent('filled_graph', {
 			self.data.reorientation_quaternion.w
 		);
 		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
-		self.fill_geometry.applyMatrix(rotation_matrix);
+		self.fill_geometry.applyMatrix4(rotation_matrix);
 	},
 
 	update: function (oldData) {
@@ -556,7 +551,7 @@ AFRAME.registerComponent('racing_dots', {
 			self.data.reorientation_quaternion.w
 		);
 		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
-		self.racing_dots_geometry.applyMatrix(rotation_matrix);	
+		self.racing_dots_geometry.applyMatrix4(rotation_matrix);	
 	},
 
 	remove: function () {
@@ -686,7 +681,7 @@ AFRAME.registerComponent('smoothing_inspector', {
 			self.data.reorientation_quaternion.w
 		);
 		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion);
-		self.smoothing_geometry.applyMatrix(rotation_matrix);	
+		self.smoothing_geometry.applyMatrix4(rotation_matrix);	
 	},
 
 	remove: function () {

@@ -155,18 +155,18 @@ function render_racing_line(values) {
 
 	//	Select and create elements
 	const scene =					document.querySelector('a-scene');
-	const racing_line =				document.createElement('a-entity');
+	const racing_graphs =			document.createElement('a-entity');
 	const raw_line =				document.createElement('a-entity');
 
 	//	Place the racing line in the scene
-	racing_line.appendChild(raw_line);
-	scene.appendChild(racing_line);
+	racing_graphs.appendChild(raw_line);
+	scene.appendChild(racing_graphs);
 
 	//	TODO: Replace with swizzle function to set correct Z?
-	racing_line.object3D.rotation.x += (-90 * (Math.PI / 180));
-	racing_line.setAttribute('scale', (scaling_factor + ' ' + scaling_factor + ' ' + scaling_factor));
-	racing_line.setAttribute('position', '0.0 1.0 -1.0');
-	racing_line.setAttribute('id', 'racing_line');
+	racing_graphs.object3D.rotation.x += (-90 * (Math.PI / 180));
+	racing_graphs.setAttribute('scale', (scaling_factor + ' ' + scaling_factor + ' ' + scaling_factor));
+	racing_graphs.setAttribute('position', '0.0 1.0 -1.0');
+	racing_graphs.setAttribute('id', 'racing_graphs');
 
 	raw_line.setAttribute('position', '0.0 0.0 -1.0');
 
@@ -187,7 +187,7 @@ function render_racing_line(values) {
 			case 'point':
 				coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify);
 				coords = coords.join(', ');
-				raw_line.setAttribute('racing_line', 'streamed_coords', coords);
+				raw_line.setAttribute('racing_line',  { streamed_coords: coords, streamed_index: parsed_message.index });
 				break;
 
 			case 'terminate':
@@ -230,10 +230,10 @@ function render_racing_line(values) {
 function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 	window.console.log('render_smoothed_line');
 
-	const racing_line = document.querySelector('#racing_line');
+	const racing_graphs = document.querySelector('#racing_graphs');
 	const smoothed_line = document.createElement('a-entity');
 
-	racing_line.appendChild(smoothed_line);
+	racing_graphs.appendChild(smoothed_line);
 
 	//	Assign the smoothed line component
 	smoothed_line.setAttribute('racing_line', {
@@ -305,10 +305,10 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 	window.console.log('render_graphs');
 
-	const racing_line = document.querySelector('#racing_line');
+	const racing_graphs = document.querySelector('#racing_graphs');
 	const graphed_line = document.createElement('a-entity');
 
-	racing_line.appendChild(graphed_line);
+	racing_graphs.appendChild(graphed_line);
 
 	//	Assign the line graph component
 	graphed_line.setAttribute('filled_graph', {
