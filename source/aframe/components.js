@@ -210,7 +210,7 @@ AFRAME.registerComponent('racing_line', {
 				position.array[(position_index + 2)] = vertex.z;
 			});
 
-			self.racing_line_geometry.setDrawRange(0, (self.data.streamed_index * 3) + ((streamed_coords.length - 1) * 3));
+			self.racing_line_geometry.setDrawRange(0, self.data.streamed_index + streamed_coords.length);
 			self.racing_line_geometry.attributes.position.needsUpdate = true;
 			self.racing_line_geometry.computeBoundingSphere();
 		}

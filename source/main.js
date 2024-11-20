@@ -244,10 +244,9 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 		colour: '#FF66FF'
 	});
 
-	let smoothed_coords = null;
-	let index = 0;
-
 	//	Run smoothing algorithm on current lap
+	let index = 0;
+	let smoothed_coords = null;
 	let parsed_message = null;
 	let smoother_message = function (event) {
 		parsed_message = JSON.parse(event.data);
@@ -266,14 +265,14 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 				break;
 
 			case 'terminate':
-				smoothed_coords = undefined;
 				index = undefined;
+				smoothed_coords = undefined;
 				parsed_message = undefined;
 
 				utilities.clean_up_worker(workers.smoother, smoother_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
-				render_graphs(lap_points, up_vector, reorientation_quaternion);
+				// render_graphs(lap_points, up_vector, reorientation_quaternion);
 				break;
 		}
 	}
