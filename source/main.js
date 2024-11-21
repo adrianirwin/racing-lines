@@ -272,7 +272,7 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 				utilities.clean_up_worker(workers.smoother, smoother_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
-				// render_graphs(lap_points, up_vector, reorientation_quaternion);
+				render_graphs(lap_points, up_vector, reorientation_quaternion);
 				break;
 		}
 	}
@@ -355,8 +355,8 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 				line_coords = value_points.map(AFRAME.utils.coordinates.stringify);
 				line_coords = line_coords.join(', ');
 
-				graphed_line.setAttribute('filled_graph', 'streamed_coords', filled_coords);
-				graphed_line.setAttribute('line_graph', 'streamed_coords', line_coords);
+				graphed_line.setAttribute('filled_graph', { streamed_coords: filled_coords, streamed_index: parsed_message.index });
+				graphed_line.setAttribute('line_graph', { streamed_coords: line_coords, streamed_index: parsed_message.index });
 				break;
 
 			case 'terminate':

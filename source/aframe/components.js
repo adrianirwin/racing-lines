@@ -213,6 +213,7 @@ AFRAME.registerComponent('racing_line', {
 			self.racing_line_geometry.setDrawRange(0, self.data.streamed_index + streamed_coords.length);
 			self.racing_line_geometry.attributes.position.needsUpdate = true;
 			self.racing_line_geometry.computeBoundingSphere();
+			self.racing_line_geometry.computeBoundingBox();
 		}
 	},
 
@@ -244,14 +245,10 @@ AFRAME.registerComponent('line_graph', {
 			]
 		},
 		streamed_coords: {
-			parse: function (value) {
-				if (_.isEmpty(value) === false && _.isString(value) === true) {
-					return value.split(',').map(AFRAME.utils.coordinates.parse);
-				} else {
-					return [];
-				}
-			},
-			default: []
+			type: 'string', default: '',
+		},
+		streamed_index: {
+			type: 'number', default: 0,
 		},
 		length: {
 			type: 'number', default: 0
@@ -265,7 +262,7 @@ AFRAME.registerComponent('line_graph', {
 		const self = this;
 
 		//	Materials
-		self.value_material = new THREE.LineBasicMaterial({ color: self.data.colour });
+		self.value_material = new THREE.LineBasicMaterial({ color: self.data.colour, linewidth: 1 });
 
 		//	Geometry
 		self.value_geometry = new THREE.BufferGeometry();
@@ -275,6 +272,7 @@ AFRAME.registerComponent('line_graph', {
 
 		self.value_positions = new Float32Array(self.data.length * 3);
 		self.value_geometry.setAttribute('position', new THREE.BufferAttribute(self.value_positions, 3));
+		self.value_geometry.setDrawRange(0, 0);
 
 		//	Create the value line
 		self.value_line = new THREE.Line(self.value_geometry, self.value_material);
@@ -311,17 +309,15 @@ AFRAME.registerComponent('line_graph', {
 	update: function (oldData) {
 		const self = this;
 
-		// if (
-		// 	_.isEmpty(oldData.coords) === false
-		// 	&& _.isEmpty(self.data.coords) === false
-		// ) {
 		if (_.isEmpty(self.data.streamed_coords) === false) {
+			const position = self.value_geometry.getAttribute('position');
+			const streamed_coords = self.data.streamed_coords.split(',').map((coords) => AFRAME.utils.coordinates.parse(coords));
 
-			// const diff = self.data.coords.slice(self.point_count);
+			let position_index = null;
+			_.forEach(streamed_coords, (coords, coords_index) => {
+				position_index = (self.data.streamed_index + coords_index) * 3;
 
-			// _.forEach(diff, (point, index) => {
-			_.forEach(self.data.streamed_coords, (point, index) => {
-				const vertex = new THREE.Vector3(point.x, point.y, point.z);
+				const vertex = new THREE.Vector3(coords.x, coords.y, coords.z);
 				const reorientation_quaternion = new THREE.Quaternion(
 					self.data.reorientation_quaternion.x,
 					self.data.reorientation_quaternion.y,
@@ -330,16 +326,12 @@ AFRAME.registerComponent('line_graph', {
 				);
 				vertex.applyQuaternion(reorientation_quaternion);
 
-				const position = (self.point_count * 3);
-
-				self.value_positions[(position)] = vertex.x;
-				self.value_positions[(position + 1)] = vertex.y;
-				self.value_positions[(position + 2)] = vertex.z;
-
-				self.point_count++;
+				position.array[(position_index + 0)] = vertex.x;
+				position.array[(position_index + 1)] = vertex.y;
+				position.array[(position_index + 2)] = vertex.z;
 			});
 
-			self.value_geometry.setDrawRange(0, self.point_count);
+			self.value_geometry.setDrawRange(0, self.data.streamed_index + streamed_coords.length);
 			self.value_geometry.attributes.position.needsUpdate = true;
 			self.value_geometry.computeBoundingSphere();
 			self.value_geometry.computeBoundingBox();
@@ -376,14 +368,10 @@ AFRAME.registerComponent('filled_graph', {
 			]
 		},
 		streamed_coords: {
-			parse: function (value) {
-				if (_.isEmpty(value) === false && _.isString(value) === true) {
-					return value.split(',').map(AFRAME.utils.coordinates.parse);
-				} else {
-					return [];
-				}
-			},
-			default: []
+			type: 'string', default: '',
+		},
+		streamed_index: {
+			type: 'number', default: 0,
 		},
 		length: {
 			type: 'number', default: 0
@@ -410,12 +398,10 @@ AFRAME.registerComponent('filled_graph', {
 
 		//	There seems to be something amiss with the update call that causes it to miss every other addition
 		self.point_count = 0;
+		self.vertices_per_segment = 2;
 		self.indicies_per_segment = 6;
 
-		self.fill_positions = new Float32Array(self.data.length * self.indicies_per_segment);
-		self.fill_geometry.setAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
-
-		self.fill_indicies = new Uint32Array((self.data.length - 1) * self.indicies_per_segment);
+		self.fill_indicies = new Array(self.data.length);
 		for (let i = 0, l = (self.data.length - 1); i < l; i++) {
 			self.fill_indicies[((i * self.indicies_per_segment) + 0)] =  ((i * 2) + 0);
 			self.fill_indicies[((i * self.indicies_per_segment) + 1)] =  ((i * 2) + 1);
@@ -424,23 +410,27 @@ AFRAME.registerComponent('filled_graph', {
 			self.fill_indicies[((i * self.indicies_per_segment) + 4)] =  ((i * 2) + 2);
 			self.fill_indicies[((i * self.indicies_per_segment) + 5)] =  ((i * 2) + 1);
 		}
-		self.fill_geometry.setIndex(new THREE.BufferAttribute(self.fill_indicies, 1));
+		self.fill_geometry.setIndex(self.fill_indicies);
+
+		self.fill_positions = new Float32Array(self.data.length * self.vertices_per_segment * 3);
+		self.fill_geometry.setAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
 
 		//	Create the filled surface
 		self.filled_surface = new THREE.Mesh(self.fill_geometry, self.fill_material);
 		self.el.setObject3D('filled_surface', self.filled_surface);
 
 		//	Plot value filled surface vertices
-		self.data.coords.forEach((point, index) => {
-			const position = (index * 3);
+		// self.data.coords.forEach((point, index) => {
+		// 	const position = (index * 3);
 
-			self.fill_positions[(position)] = point.x;
-			self.fill_positions[(position + 1)] = point.y;
-			self.fill_positions[(position + 2)] = point.z;
+		// 	self.fill_positions[(position)] = point.x;
+		// 	self.fill_positions[(position + 1)] = point.y;
+		// 	self.fill_positions[(position + 2)] = point.z;
 
-			self.point_count++;
-		});
-		self.fill_geometry.setDrawRange(0, (((self.point_count - 2) * (Math.round(self.indicies_per_segment / 2))) - (((self.point_count - 2) * (Math.round(self.indicies_per_segment / 2))) % (Math.round(self.indicies_per_segment / 2)))));
+		// 	self.point_count++;
+		// });
+
+		self.fill_geometry.setDrawRange(0, 0);
 
 		//	The original GPS data is stored as lat/long, after
 		//	converting to cartesian coordinates, the 'up' vector is
@@ -462,8 +452,14 @@ AFRAME.registerComponent('filled_graph', {
 		const self = this;
 
 		if (_.isEmpty(self.data.streamed_coords) === false) {
-			_.forEach(self.data.streamed_coords, (point, index) => {
-				const vertex = new THREE.Vector3(point.x, point.y, point.z);
+			const position = self.fill_geometry.getAttribute('position');
+			const streamed_coords = self.data.streamed_coords.split(',').map((coords) => AFRAME.utils.coordinates.parse(coords));
+
+			let position_index = null;
+			_.forEach(streamed_coords, (coords, coords_index) => {
+				position_index = ((self.data.streamed_index * 2) + coords_index) * 3;
+
+				const vertex = new THREE.Vector3(coords.x, coords.y, coords.z);
 				const reorientation_quaternion = new THREE.Quaternion(
 					self.data.reorientation_quaternion.x,
 					self.data.reorientation_quaternion.y,
@@ -472,16 +468,14 @@ AFRAME.registerComponent('filled_graph', {
 				);
 				vertex.applyQuaternion(reorientation_quaternion);
 
-				const position = (self.point_count * 3);
-
-				self.fill_positions[(position)] = vertex.x;
-				self.fill_positions[(position + 1)] = vertex.y;
-				self.fill_positions[(position + 2)] = vertex.z;
+				self.fill_positions[(position_index + 0)] = vertex.x;
+				self.fill_positions[(position_index + 1)] = vertex.y;
+				self.fill_positions[(position_index + 2)] = vertex.z;
 
 				self.point_count++;
 			});
 
-			self.fill_geometry.setDrawRange(0, (((self.point_count - 2) * (Math.round(self.indicies_per_segment / 2))) - (((self.point_count - 2) * (Math.round(self.indicies_per_segment / 2))) % (Math.round(self.indicies_per_segment / 2)))));
+			self.fill_geometry.setDrawRange(0, position_index - 3);
 			self.fill_geometry.attributes.position.needsUpdate = true;
 			self.fill_geometry.computeBoundingSphere();
 			self.fill_geometry.computeBoundingBox();
