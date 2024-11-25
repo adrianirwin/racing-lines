@@ -58,7 +58,11 @@ AFRAME.registerComponent('ground_plane', {
 
 		self.ground_plane_dots = new THREE.Points(
 			self.ground_plane_dots_geometry,
-			new THREE.PointsMaterial({ vertexColors: true, size: self.data.size, sizeAttenuation: true }),
+			new THREE.PointsMaterial({
+				vertexColors: true,
+				size: self.data.size,
+				sizeAttenuation: true
+			}),
 		);
 		
 		self.el.setObject3D('ground_plane_dots', self.ground_plane_dots);
@@ -118,8 +122,14 @@ AFRAME.registerComponent('racing_line', {
 		self.will_grow = (self.data.length > 0)? true: false;
 
 		//	Materials
-		self.racing_line_material = new THREE.LineBasicMaterial({ color: self.data.colour, linewidth: 1 });
-		self.start_finish_material = new THREE.LineBasicMaterial({ color: '#FFFF00', linewidth: 1 });
+		self.racing_line_material = new THREE.LineBasicMaterial({
+			color: self.data.colour,
+			linewidth: 1,
+		});
+		self.start_finish_material = new THREE.LineBasicMaterial({
+			color: '#FFFF00',
+			linewidth: 1,
+		});
 
 		self.start_finish_points = [];
 
@@ -262,7 +272,10 @@ AFRAME.registerComponent('line_graph', {
 		const self = this;
 
 		//	Materials
-		self.value_material = new THREE.LineBasicMaterial({ color: self.data.colour, linewidth: 1 });
+		self.value_material = new THREE.LineBasicMaterial({
+			color: self.data.colour,
+			linewidth: 1,
+		});
 
 		//	Geometry
 		self.value_geometry = new THREE.BufferGeometry();
@@ -370,6 +383,9 @@ AFRAME.registerComponent('filled_graph', {
 		streamed_coords: {
 			type: 'string', default: '',
 		},
+		streamed_deltas: {
+			type: 'string', default: '',
+		},
 		streamed_index: {
 			type: 'number', default: 0,
 		},
@@ -386,11 +402,12 @@ AFRAME.registerComponent('filled_graph', {
 
 		//	Materials
 		self.fill_material = new THREE.MeshBasicMaterial({
-			color: self.data.colour,
+			// color: self.data.colour,
 			transparent: true,
-			opacity: 0.5,
+			opacity: 0.85,
 			side: THREE.DoubleSide,
-			depthWrite: false
+			depthWrite: true,
+			vertexColors: true,
 		});
 
 		//	Geometry
@@ -413,7 +430,10 @@ AFRAME.registerComponent('filled_graph', {
 		self.fill_geometry.setIndex(self.fill_indicies);
 
 		self.fill_positions = new Float32Array(self.data.length * self.vertices_per_segment * 3);
+		self.fill_colours = new Float32Array(self.data.length * self.vertices_per_segment * 3);
+
 		self.fill_geometry.setAttribute('position', new THREE.BufferAttribute(self.fill_positions, 3));
+		self.fill_geometry.setAttribute('color', new THREE.BufferAttribute(self.fill_colours, 3));
 
 		//	Create the filled surface
 		self.filled_surface = new THREE.Mesh(self.fill_geometry, self.fill_material);
@@ -451,10 +471,33 @@ AFRAME.registerComponent('filled_graph', {
 	update: function (oldData) {
 		const self = this;
 
-		if (_.isEmpty(self.data.streamed_coords) === false) {
+		if (_.isEmpty(self.data.streamed_coords) === false && _.isEmpty(self.data.streamed_deltas) === false) {
 			const position = self.fill_geometry.getAttribute('position');
+			const colour = self.fill_geometry.getAttribute('color');
 			const streamed_coords = self.data.streamed_coords.split(',').map((coords) => AFRAME.utils.coordinates.parse(coords));
+			const streamed_deltas = self.data.streamed_deltas.split(',').map((delta) => Number(delta));
 
+			const boundary_topup =  0.265;
+			const boundary_maxup =  0.250;
+			const boundary_accel =  0.125;
+			const boundary_decel = -0.050;
+			const boundary_maxdn = -1.125;
+
+			const top_colour_maxup = new THREE.Color('rgb(252, 212, 000)');
+			const top_colour_midup = new THREE.Color('rgb(255, 045, 241)');
+			const top_colour_accel = new THREE.Color('rgb(050, 045, 241)');
+			const top_colour_coast = new THREE.Color('rgb(050, 167, 241)');
+			const top_colour_decel = new THREE.Color('rgb(255, 024, 000)');
+			const top_colour_maxdn = new THREE.Color('rgb(097, 000, 079)');
+
+			const bot_colour_maxup = new THREE.Color('rgb(000, 000, 000)');
+			const bot_colour_midup = new THREE.Color('rgb(000, 000, 000)');
+			const bot_colour_accel = new THREE.Color('rgb(000, 000, 000)');
+			const bot_colour_coast = new THREE.Color('rgb(000, 000, 000)');
+			const bot_colour_decel = new THREE.Color('rgb(000, 000, 000)');
+			const bot_colour_maxdn = new THREE.Color('rgb(000, 000, 000)');
+
+			let delta_colour = null;
 			let position_index = null;
 			_.forEach(streamed_coords, (coords, coords_index) => {
 				position_index = ((self.data.streamed_index * 2) + coords_index) * 3;
@@ -468,15 +511,98 @@ AFRAME.registerComponent('filled_graph', {
 				);
 				vertex.applyQuaternion(reorientation_quaternion);
 
-				self.fill_positions[(position_index + 0)] = vertex.x;
-				self.fill_positions[(position_index + 1)] = vertex.y;
-				self.fill_positions[(position_index + 2)] = vertex.z;
+				position.array[(position_index + 0)] = vertex.x;
+				position.array[(position_index + 1)] = vertex.y;
+				position.array[(position_index + 2)] = vertex.z;
+
+				const delta_index = Math.floor(coords_index / 2);
+
+				let top_delta_colour = top_colour_coast;
+				let bot_delta_colour = bot_colour_coast;
+
+				//	TODO: Replace with method that takes the boundaries and list of colours on the gradient as inputs
+				switch (true) {
+					//	Maximum acceleration
+					case streamed_deltas[delta_index] >= boundary_maxup:
+						const top_colour_maxup_lerped = new THREE.Color(top_colour_midup).lerp(top_colour_maxup, ((streamed_deltas[delta_index] - boundary_maxup) * (1 / boundary_topup)));
+						const bot_colour_maxup_lerped = new THREE.Color(bot_colour_midup).lerp(bot_colour_maxup, ((streamed_deltas[delta_index] - boundary_maxup) * (1 / boundary_topup)));
+
+						top_delta_colour = top_colour_maxup_lerped;
+						bot_delta_colour = bot_colour_maxup_lerped;
+						break;
+
+					//	Accelerating
+					case streamed_deltas[delta_index] >= boundary_accel:
+						const top_colour_accel_lerped = new THREE.Color(top_colour_accel).lerp(top_colour_midup, ((streamed_deltas[delta_index] - boundary_accel) * (1 / boundary_maxup)));
+						const bot_colour_accel_lerped = new THREE.Color(bot_colour_accel).lerp(bot_colour_midup, ((streamed_deltas[delta_index] - boundary_accel) * (1 / boundary_maxup)));
+
+						top_delta_colour = top_colour_accel_lerped;
+						bot_delta_colour = bot_colour_accel_lerped;
+						break;
+
+					//	Minimum acceleration
+					// case streamed_deltas[delta_index] === boundary_accel:
+					// 	top_delta_colour = top_colour_accel;
+					// 	bot_delta_colour = bot_colour_accel;
+					// 	break;
+
+					//	Marginal acceleration
+					case streamed_deltas[delta_index] > 0.0:
+						const top_colour_marup_lerped = new THREE.Color(top_colour_coast).lerp(top_colour_accel, ((streamed_deltas[delta_index]) * (1 / boundary_accel)));
+						const bot_colour_marup_lerped = new THREE.Color(bot_colour_coast).lerp(bot_colour_accel, ((streamed_deltas[delta_index]) * (1 / boundary_accel)));
+
+						top_delta_colour = top_colour_marup_lerped;
+						bot_delta_colour = bot_colour_marup_lerped;
+						break;
+
+					//	Maximum deceleration
+					case streamed_deltas[delta_index] < boundary_maxdn:
+						top_delta_colour = top_colour_maxdn;
+						bot_delta_colour = bot_colour_maxdn;
+						break;
+
+					//	Decelerating
+					case streamed_deltas[delta_index] <= boundary_decel:
+						const top_colour_decel_lerped = new THREE.Color(top_colour_decel).lerp(top_colour_maxdn, ((streamed_deltas[delta_index] - boundary_decel) * (1 / boundary_maxdn)));
+						const bot_colour_decel_lerped = new THREE.Color(bot_colour_decel).lerp(bot_colour_maxdn, ((streamed_deltas[delta_index] - boundary_decel) * (1 / boundary_maxdn)));
+
+						top_delta_colour = top_colour_decel_lerped;
+						bot_delta_colour = bot_colour_decel_lerped;
+						break;
+
+					//	Minimum deceleration
+					// case streamed_deltas[delta_index] === boundary_decel:
+					// 	top_delta_colour = top_colour_decel;
+					// 	bot_delta_colour = bot_colour_decel;
+					// 	break;
+
+					//	Marginal deceleration
+					case streamed_deltas[delta_index] < 0.0:
+						const top_colour_mardn_lerped = new THREE.Color(top_colour_coast).lerp(top_colour_decel, ((streamed_deltas[delta_index]) * (1 / boundary_decel)));
+						const bot_colour_mardn_lerped = new THREE.Color(bot_colour_coast).lerp(bot_colour_decel, ((streamed_deltas[delta_index]) * (1 / boundary_decel)));
+
+						top_delta_colour = top_colour_mardn_lerped;
+						bot_delta_colour = bot_colour_mardn_lerped;
+						break;
+				}
+
+				if (position_index % 2 === 1) {
+					colour.array[(position_index + 0)] = top_delta_colour.r;
+					colour.array[(position_index + 1)] = top_delta_colour.g;
+					colour.array[(position_index + 2)] = top_delta_colour.b;
+				}
+				else {
+					colour.array[(position_index + 0)] = bot_delta_colour.r;
+					colour.array[(position_index + 1)] = bot_delta_colour.g;
+					colour.array[(position_index + 2)] = bot_delta_colour.b;
+				}
 
 				self.point_count++;
 			});
 
 			self.fill_geometry.setDrawRange(0, position_index - 3);
 			self.fill_geometry.attributes.position.needsUpdate = true;
+			self.fill_geometry.attributes.color.needsUpdate = true;
 			self.fill_geometry.computeBoundingSphere();
 			self.fill_geometry.computeBoundingBox();
 		}

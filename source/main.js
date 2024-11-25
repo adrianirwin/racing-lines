@@ -60,17 +60,17 @@ function start_vr_ui() {
 
 	const camera = document.querySelector('a-entity[camera]');
 
-	const text = document.createElement('a-entity');
-	text.setAttribute('position', '0.04 0 -0.5');
-	text.setAttribute('text', {
-		'width': 0.2,
-		'anchor': 'center',
-		'color': 'rgb(240, 240, 255)',
-		'value': 'HUD - Coming Soon'
-	});
-	camera.appendChild(text);
+	// const text = document.createElement('a-entity');
+	// text.setAttribute('position', '0.04 0 -0.5');
+	// text.setAttribute('text', {
+	// 	'width': 0.2,
+	// 	'anchor': 'center',
+	// 	'color': 'rgb(240, 240, 255)',
+	// 	'value': 'HUD - Coming Soon'
+	// });
+	// camera.appendChild(text);
 
-	vr_ui_elements.push(text);
+	// vr_ui_elements.push(text);
 }
 
 function exit_vr_ui() {
@@ -100,7 +100,9 @@ function start_vr_scene() {
 	const hand_controls_right = document.createElement('a-entity');
 
 	hand_controls_left.setAttribute('oculus-touch-controls', {'hand': 'left'});
+	// hand_controls_left.setAttribute('hand-controls', 'left');
 	hand_controls_right.setAttribute('oculus-touch-controls', {'hand': 'right'});
+	// hand_controls_right.setAttribute('hand-controls', 'right');
 	hand_controls_left.setAttribute('id', 'left_hand');
 	hand_controls_right.setAttribute('id', 'right_hand');
 
@@ -326,8 +328,10 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 	//	Draw speed graph
 	let value_points = null;
 	let floor_points = null;
+	let delta_points = null;
 	let filled_coords = null;
 	let line_coords = null;
+	let delta_values = null;
 	let ordered_points = [];
 
 	let index = 0
@@ -341,6 +345,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 				//	"Grow" the graphed line
 				value_points = parsed_message.points.values;
 				floor_points = parsed_message.points.floors;
+				delta_points = parsed_message.points.deltas;
 
 				//	Set the order of the points for the filled surface
 				ordered_points = [];
@@ -355,7 +360,9 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 				line_coords = value_points.map(AFRAME.utils.coordinates.stringify);
 				line_coords = line_coords.join(', ');
 
-				graphed_line.setAttribute('filled_graph', { streamed_coords: filled_coords, streamed_index: parsed_message.index });
+				delta_values = delta_points.join(', ');
+
+				graphed_line.setAttribute('filled_graph', { streamed_coords: filled_coords, streamed_deltas: delta_values, streamed_index: parsed_message.index });
 				graphed_line.setAttribute('line_graph', { streamed_coords: line_coords, streamed_index: parsed_message.index });
 				break;
 
@@ -391,10 +398,11 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 				'command': 'start',
 				'floor_path': 'coordinates.cartesian.smoothed',
 				'value_path': 'performance.speed',
-				'scale': 0.25,
+				'delta_path': 'delta.speed',
+				'scale': 0.5,
 				'steps': 50,
 				'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
-				'value_function': graphs.offset_fill.name
+				'value_function': graphs.delta_fill.name
 			}));
 		}
 	}, 1, this);

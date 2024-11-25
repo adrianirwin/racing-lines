@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import * as THREE from 'three';
 
 //	Simple line graph, renders the points as provided
-function line(floor_points, values, index, scale, steps, offset_vector_coords) {
+function line(floor_points, values, deltas, index, scale, steps, offset_vector_coords) {
 	const points = [];
 
 	for (let count = 0; count < steps && _.isUndefined(floor_points[(index + count)]) === false; count++) {
@@ -15,7 +15,7 @@ function line(floor_points, values, index, scale, steps, offset_vector_coords) {
 }
 
 //	Line graph, scaled along the offset (typically Z) axis
-function offset_line(floor_points, values, index, scale, steps, offset_vector_coords) {
+function offset_line(floor_points, values, deltas, index, scale, steps, offset_vector_coords) {
 	const points = { 'values': [] };
 
 	for (let count = 0; count < steps && _.isUndefined(floor_points[(index + count)]) === false; count++) {
@@ -32,7 +32,7 @@ function offset_line(floor_points, values, index, scale, steps, offset_vector_co
 }
 
 //	Filled line graph with previous point, scaled directly along the Z-axis
-function offset_fill(floor_points, values, index, scale, steps, offset_vector_coords) {
+function offset_fill(floor_points, values, deltas, index, scale, steps, offset_vector_coords) {
 	const points = { 'floors': [] };
 
 	for (let count = 0; count < steps && _.isUndefined(floor_points[(index + count)]) === false; count++) {
@@ -40,9 +40,23 @@ function offset_fill(floor_points, values, index, scale, steps, offset_vector_co
 	}
 
 	return _.assign({},
-		offset_line(floor_points, values, index, scale, steps, offset_vector_coords),
+		offset_line(floor_points, values, deltas, index, scale, steps, offset_vector_coords),
 		points
 	);
 }
 
-export { line, offset_line, offset_fill };
+//	
+function delta_fill(floor_points, values, deltas, index, scale, steps, offset_vector_coords) {
+	const points = { 'deltas': [] };
+
+	for (let count = 0; count < steps && _.isUndefined(deltas[(index + count)]) === false; count++) {
+		_.set(points, 'deltas[' + count + ']', deltas[(index + count)]);
+	}
+
+	return _.assign({},
+		offset_fill(floor_points, values, deltas, index, scale, steps, offset_vector_coords),
+		points
+	);
+}
+
+export { line, offset_line, offset_fill, delta_fill };

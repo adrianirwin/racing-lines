@@ -40,6 +40,10 @@ self.csv_to_object = function(csv) {
 
 	let gps_index = 0;
 	let most_recent_lap = 0;
+	let previous_point2 = null;
+	let previous_point = null;
+	let next_point = null;
+	let next_point2 = null;
 
 	parsed.data.forEach(function (row, index) {
 		//	TODO: Interpolation
@@ -57,18 +61,21 @@ self.csv_to_object = function(csv) {
 			&& _.isNull(longitude) === false
 		) {
 
+			//	Populate new data point
+
+			//	A: Parsed values
 			const point = new references.Racing_Line_Point();
 			const cartesian_coords = ecef(latitude, longitude);
 
 			references.value_to_point(point, 'coordinates.gps', {
 				'latitude': latitude,
-				'longitude': longitude
+				'longitude': longitude,
 			});
 
 			references.value_to_point(point, 'coordinates.cartesian.raw', {
 				'x': cartesian_coords[0],
 				'y': cartesian_coords[1],
-				'z': cartesian_coords[2]
+				'z': cartesian_coords[2],
 			});
 
 			references.log_to_point(point, row, device_profile, 'g', ['x', 'y', 'z']);
@@ -77,8 +84,14 @@ self.csv_to_object = function(csv) {
 			references.log_to_point(point, row, device_profile, 'performance', ['speed', 'current_lap']);
 			references.log_to_point(point, row, device_profile, 'diagnostics', ['coolant_temperature', 'oil_temperature', 'oil_pressure', 'battery_voltage']);
 
+			//	B: Inferred values
+			references.delta_to_point(point, previous_point, 'delta', 'speed', 'performance', 'speed');
+
+			//	Store the points
+			previous_point = point;
 			points.push(point);
 
+			//	Check current lat/lon against existing bounds
 			if (_.isNull(bounds_coords.latitude_northmost) === true || latitude > bounds_coords.latitude_northmost) {
 				bounds_coords.latitude_northmost = latitude;
 			}
@@ -95,10 +108,12 @@ self.csv_to_object = function(csv) {
 				bounds_coords.longitude_eastmost = longitude;
 			}
 
+			// TODO: What does this even do?
 			if (most_recent_lap !== current_lap) {
 				most_recent_lap = current_lap;
 				lap_boundaries.push(gps_index);
 			}
+
 			gps_index++;
 		}
 	});
@@ -116,6 +131,38 @@ self.csv_to_object = function(csv) {
 			'y': (_.get(point, 'coordinates.cartesian.raw.y') - vector_to_center[1]),
 			'z': (_.get(point, 'coordinates.cartesian.raw.z') - vector_to_center[2])
 		});
+	});
+
+	// TODO: Quick and dirty delta smoothing -- move to somewhere better
+	points.forEach(function (point, index) {
+
+		const surrounding_values = [
+			_.get(points, '[' + (index - 8) + '].delta.speed', 0),
+			_.get(points, '[' + (index - 7) + '].delta.speed', 0),
+			_.get(points, '[' + (index - 6) + '].delta.speed', 0),
+			_.get(points, '[' + (index - 5) + '].delta.speed', 0),
+			_.get(points, '[' + (index - 4) + '].delta.speed', 0),
+			_.get(points, '[' + (index - 3) + '].delta.speed', 0),
+			_.get(points, '[' + (index - 2) + '].delta.speed', 0),
+			_.get(points, '[' + (index - 1) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 0) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 1) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 2) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 3) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 4) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 5) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 6) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 7) + '].delta.speed', 0),
+			_.get(points, '[' + (index + 8) + '].delta.speed', 0),
+		];
+
+		const total = surrounding_values.reduce(function (accumulator, current) {
+			return accumulator + current
+		}, 0);
+
+		const average = total / 17;
+
+		points[index].delta.speed = average;
 	});
 
 	//	Remove the '0' boundary

@@ -17,6 +17,7 @@ self.addEventListener('message', (event) => {
 				self.points,
 				_.get(message, 'floor_path', ''),
 				_.get(message, 'value_path', ''),
+				_.get(message, 'delta_path', ''),
 				_.get(message, 'scale', 1.0),
 				_.get(message, 'steps', 1),
 				_.get(message, 'offset_vector_coords', { 'x': 0, 'y': 0, 'z': 1 }),
@@ -26,7 +27,7 @@ self.addEventListener('message', (event) => {
 	}
 });
 
-self.graph = function(points, floor_path, value_path, scale, steps, offset_vector_coords, value_function) {
+self.graph = function(points, floor_path, value_path, delta_path, scale, steps, offset_vector_coords, value_function) {
 	self.console.log('grapher.graph');
 
 	if (_.isString(value_function) === true) {
@@ -40,6 +41,7 @@ self.graph = function(points, floor_path, value_path, scale, steps, offset_vecto
 			'points': value_function(
 				_.map(points, floor_path),
 				_.map(points, value_path),
+				_.map(points, delta_path),
 				index,
 				scale,
 				steps,
