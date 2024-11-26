@@ -6,27 +6,31 @@
 	"author": "Adrian Irwin",
 	"license": "MIT",
 	"dependencies": {
+		"@types/three": "^0.170.0",
 		"aframe": "^1.6.0",
 		"babel-preset-env": "^0.0.0",
 		"geodetic-to-ecef": "^1.2.0",
 		"jquery": "^3.7.1",
 		"lodash": "^4.17.21",
-		"papaparse": "^5.4.1",
-		"three": "^0.170.0"
+		"papaparse": "^5.4.1"
 	},
 	"devDependencies": {
 		"@babel/core": "^7",
+		"@types/lodash": "^4.17.13",
 		"babelify": "^10",
 		"css-loader": "^7",
 		"remove-files-webpack-plugin": "^1.5.0",
 		"sass": "^1.80.6",
 		"sass-loader": "^16",
 		"style-loader": "^4",
+		"three": "npm:super-three@^0.164.0",
+		"typescript": "^5.7.2",
 		"webpack": "^5",
-		"webpack-cli": "^5"
+		"webpack-bundle-analyzer": "^4.10.2",
+		"webpack-cli": "^5.1.4"
 	},
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"build": "webpack"
+		"build": "tsc && webpack"
 	}
 }

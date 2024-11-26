@@ -1,5 +1,5 @@
 //	Libraries
-import * as utilities from './utilities';
+import * as util_workers from './utilities/workers';
 
 //	Parse the CSV file into:
 //	- Object of points with performance and GPS data
@@ -37,7 +37,7 @@ function parse_file( worker, files, callback) {
 					parsed_message = undefined;
 
 					resolve(values);
-					utilities.clean_up_worker(worker, worker_message, 'message');
+					util_workers.clean_up_worker(worker, worker_message, 'message');
 					break;
 			}
 		}

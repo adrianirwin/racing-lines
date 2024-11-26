@@ -4,8 +4,8 @@ import * as _ from 'lodash';
 import * as parser from './parser';
 import * as loader from './loader';
 import * as references from './references';
-import * as utilities from './utilities';
-import * as graphs from './graphs';
+import * as util_workers from './utilities/workers';
+import * as util_graphing from './utilities/graphing';
 
 //	Custom A-Frame Components
 import './aframe/components';
@@ -197,7 +197,7 @@ function render_racing_line(values) {
 				coords = undefined;
 				parsed_message = undefined;
 
-				utilities.clean_up_worker(workers.grapher, grapher_message, 'message');
+				util_workers.clean_up_worker(workers.grapher, grapher_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion);
@@ -224,7 +224,7 @@ function render_racing_line(values) {
 				'command': 'start',
 				'floor_path': 'coordinates.cartesian.raw',
 				'steps': 100,
-				'value_function': graphs.line.name
+				'value_function': util_graphing.line.name
 			}));
 		}
 	}, 1, this);
@@ -271,7 +271,7 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 				smoothed_coords = undefined;
 				parsed_message = undefined;
 
-				utilities.clean_up_worker(workers.smoother, smoother_message, 'message');
+				util_workers.clean_up_worker(workers.smoother, smoother_message, 'message');
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_graphs(lap_points, up_vector, reorientation_quaternion);
@@ -374,7 +374,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 
 				parsed_message = undefined;
 
-				utilities.clean_up_worker(workers.grapher, grapher_message, 'message');
+				util_workers.clean_up_worker(workers.grapher, grapher_message, 'message');
 				break;
 		}
 	}
@@ -402,7 +402,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 				'scale': 0.5,
 				'steps': 50,
 				'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
-				'value_function': graphs.delta_fill.name
+				'value_function': util_graphing.delta_fill.name
 			}));
 		}
 	}, 1, this);

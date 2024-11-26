@@ -1,6 +1,6 @@
 //	Libraries
 import * as _ from 'lodash';
-import * as graphs from '../graphs';
+import * as graphs from './../utilities/graphing';
 
 self.points = [];
 
