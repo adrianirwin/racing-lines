@@ -2,9 +2,8 @@
 import * as AFRAME from 'aframe';
 import * as _ from 'lodash';
 import * as parser from './parser';
-import * as loader from './loader';
 import * as references from './references';
-import * as util_workers from './utilities/workers';
+import * as file_loader from './utilities/file_loader';
 import * as util_graphing from './utilities/graphing';
 
 //	Custom A-Frame Components
@@ -47,7 +46,7 @@ function start_web_ui() {
 }
 
 function allow_file_upload() {
-	loader.add_listener(workers.loader, document.querySelector('input[name="log_file"]'), file_finished_loading);
+	file_loader.add_listener(workers.loader, document.querySelector('input[name="log_file"]'), file_finished_loading);
 }
 
 function file_finished_loading(values) {
@@ -197,7 +196,7 @@ function render_racing_line(values) {
 				coords = undefined;
 				parsed_message = undefined;
 
-				util_workers.clean_up_worker(workers.grapher, grapher_message, 'message');
+				workers.grapher.removeEventListener('message', grapher_message);
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion);
@@ -271,7 +270,7 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 				smoothed_coords = undefined;
 				parsed_message = undefined;
 
-				util_workers.clean_up_worker(workers.smoother, smoother_message, 'message');
+				workers.smoother.removeEventListener('message', smoother_message);
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_graphs(lap_points, up_vector, reorientation_quaternion);
@@ -374,7 +373,7 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 
 				parsed_message = undefined;
 
-				util_workers.clean_up_worker(workers.grapher, grapher_message, 'message');
+				workers.grapher.removeEventListener('message', grapher_message);
 				break;
 		}
 	}
