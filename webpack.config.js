@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const CopyPlugin = require("copy-webpack-plugin");
 const RemovePlugin = require('remove-files-webpack-plugin');
 
 module.exports = {
@@ -7,7 +8,7 @@ module.exports = {
 	mode: 'development',
 	// mode: 'production',
 	devtool: 'source-map',
-	entry: './source/main.js',
+	entry: './ts/source/main.js',
 	output: {
 		filename: 'bundle.js',
 		path: path.resolve(__dirname, 'dist'),
@@ -17,6 +18,9 @@ module.exports = {
 			{
 				test: /\.scss/,
 				use: ['style-loader', 'css-loader', 'sass-loader'],
+				include: [
+					path.resolve(__dirname, './ts/source/styles' ),
+				]
 			},
 		]
 	},
@@ -25,6 +29,12 @@ module.exports = {
 			$: 'jquery',
 			jQuery: 'jquery',
 		}),
+		new CopyPlugin({
+			patterns: [
+				{ from: './source/styles/', to: './../ts/source/styles/' }
+			],
+		})
+		,
 		new RemovePlugin({
 			before: {
 				allowRootAndOutside: true,
@@ -39,10 +49,5 @@ module.exports = {
 				]
 			}
 		})
-	],
-	resolve: {
-		alias: {
-			'three': path.resolve('node_modules', 'three'),
-		}
-	},
+	]
 };

@@ -108,7 +108,7 @@ self.smooth = function(data, bounds, weights, steps) {
 			//	Use the preceding angle between the smoothed points to
 			//	predict the final angle
 			//	TODO: This is wrapping around in some places, needs work
-			// var angle_budget = (Math.PI / 2);
+			// let angle_budget = (Math.PI / 2);
 			// const angle = _.nth(vectors_between_averaged_points, -2).angleTo(_.last(vectors_between_averaged_points));
 			// if (_.isNaN(angle) === false) {
 			// 	angle_budget = Math.max((angle_budget - angle), 0);

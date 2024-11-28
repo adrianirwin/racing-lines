@@ -1,8 +1,8 @@
 //	Libraries
 import * as AFRAME from 'aframe';
 import * as _ from 'lodash';
-import * as parser from './parser';
 import * as references from './references';
+import * as file_parser from './utilities/file_parser';
 import * as file_loader from './utilities/file_loader';
 import * as util_graphing from './utilities/graphing';
 
@@ -139,7 +139,7 @@ function render_racing_line(values) {
 	//	 - to the north pole ('up') in earth space
 	//	 - cross product along which to rotate to translate from one to the other
 	const v3_to_center =			new THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2]);
-	const vector_to_north_pole =	parser.vector_to_north_pole();
+	const vector_to_north_pole =	file_parser.vector_to_north_pole();
 	const v3_to_north_pole =		new THREE.Vector3(vector_to_north_pole[0], vector_to_north_pole[1], vector_to_north_pole[2]);
 	let v3_cross =					new THREE.Vector3(0, 0, 0);
 
@@ -151,7 +151,7 @@ function render_racing_line(values) {
 	const angle =					v3_to_center.angleTo(v3_to_north_pole);
 
 	//	Quaternion describing the rotation
-	var reorientation_quaternion =	new THREE.Quaternion();
+	let reorientation_quaternion =	new THREE.Quaternion();
 	reorientation_quaternion.setFromAxisAngle(v3_cross, angle);
 
 	//	Select and create elements
@@ -175,7 +175,7 @@ function render_racing_line(values) {
 	raw_line.setAttribute('racing_line', {
 		coords: '',
 		length: second_lap_test.length,
-		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
+		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion)
 	});
 
 	//	Draw raw GPS racing line
@@ -241,7 +241,7 @@ function render_smoothed_line(lap_points, up_vector, reorientation_quaternion) {
 	smoothed_line.setAttribute('racing_line', {
 		coords: '',
 		length: lap_points.length,
-		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion),
+		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion),
 		colour: '#FF66FF'
 	});
 
@@ -315,13 +315,13 @@ function render_graphs(lap_points, up_vector, reorientation_quaternion) {
 	graphed_line.setAttribute('filled_graph', {
 		coords: '',
 		length: lap_points.length,
-		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
+		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion)
 	});
 
 	graphed_line.setAttribute('line_graph', {
 		coords: '',
 		length: lap_points.length,
-		reorientation_quaternion: parser.vector_to_string(reorientation_quaternion)
+		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion)
 	});
 
 	//	Draw speed graph

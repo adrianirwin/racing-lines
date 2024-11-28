@@ -663,8 +663,8 @@ AFRAME.registerComponent('racing_dots', {
 		//	still correct in 'globe' space. This applies the calculated
 		//	rotation transformation to the racing line geometry,
 		//	so 'up' for subsequent operations is now Z+.
-		var rotation_matrix = new THREE.Matrix4();
-		var reorientation_quaternion = new THREE.Quaternion(
+		let rotation_matrix = new THREE.Matrix4();
+		let reorientation_quaternion = new THREE.Quaternion(
 			self.data.reorientation_quaternion.x,
 			self.data.reorientation_quaternion.y,
 			self.data.reorientation_quaternion.z,
@@ -793,8 +793,8 @@ AFRAME.registerComponent('smoothing_inspector', {
 		//	still correct in 'globe' space. This applies the calculated
 		//	rotation transformation to the racing line geometry,
 		//	so 'up' for subsequent operations is now Z+.
-		var rotation_matrix = new THREE.Matrix4();
-		var reorientation_quaternion = new THREE.Quaternion(
+		let rotation_matrix = new THREE.Matrix4();
+		let reorientation_quaternion = new THREE.Quaternion(
 			self.data.reorientation_quaternion.x,
 			self.data.reorientation_quaternion.y,
 			self.data.reorientation_quaternion.z,
