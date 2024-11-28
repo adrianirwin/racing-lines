@@ -1,3 +1,8 @@
+import {
+	LoadedValues,
+	RacingLinePoint,
+} from './../models/racing_lines'
+
 //	Parse the CSV file into:
 //	- Object of points with performance and GPS data
 //	- Object of lat/long coordinates representing the outer boundaries of the GPS points
@@ -8,14 +13,19 @@ function parse_file(worker: Worker, files: FileList | null, callback: Function):
 	//	Process all of the newly loaded data
 	new Promise((resolve, reject) => {
 
-		const values = {
-			points: [],
-			bounds_coords: {},
-			vector_to_center: [],
-			lap_boundaries: [],
-		};
+		const values: LoadedValues = {
+			points: new Array<RacingLinePoint>(),
+			bounds_coords: {
+				latitude_northmost: 0,
+				latitude_southmost: 0,
+				longitude_eastmost: 0,
+				longitude_westmost: 0,
+			},
+			vector_to_center: new Array<number>(),
+			lap_boundaries: new Array<number>(),
+		}
 
-		let parsed_message = null;
+		let parsed_message = null
 		let worker_message = function (event: MessageEvent): void {
 			parsed_message = JSON.parse(event.data)
 
@@ -24,19 +34,18 @@ function parse_file(worker: Worker, files: FileList | null, callback: Function):
 					values.bounds_coords = parsed_message.bounds_coords
 					values.vector_to_center = parsed_message.vector_to_center
 					values.lap_boundaries = parsed_message.lap_boundaries
-					break;
+					break
 
 				case 'points':
 					values.points = values.points.concat(parsed_message.points)
-					break;
+					break
 
 				case 'terminate':
 					parsed_message = undefined
 
 					resolve(values)
-					// util_workers.clean_up_worker(worker, worker_message, 'message')
 					worker.removeEventListener('message', worker_message)
-					break;
+					break
 			}
 		}
 
@@ -45,7 +54,7 @@ function parse_file(worker: Worker, files: FileList | null, callback: Function):
 
 	}).then(function(values) {
 		callback(values)
-	});
+	})
 }
 
 //	Add a listener listening for the onChange event on a <input type="file"> element

@@ -1,4 +1,5 @@
-dist/
+dist/*
+!dist/analyzer.html
 node_modules/
 ts/
 

@@ -15,9 +15,10 @@ body {
 	color: rgb(255, 255, 255);
 	box-shadow: inset 10px 15px 40px rgba(0, 0, 0, 0.2);
 
-	input[name="log_file"] {
-		width: 100%;
-	}
+}
+
+#file_upload {
+	width: 100%;
 }
 
 p {

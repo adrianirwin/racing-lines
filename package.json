@@ -17,6 +17,8 @@
 	},
 	"devDependencies": {
 		"@babel/core": "^7",
+		"@types/aframe": "^1.2.7",
+		"@types/jquery": "^3.5.32",
 		"@types/lodash": "^4.17.13",
 		"babelify": "^10",
 		"copy-webpack-plugin": "^12.0.2",

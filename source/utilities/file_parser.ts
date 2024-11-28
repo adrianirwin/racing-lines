@@ -22,16 +22,16 @@ function from_csv(csv: string): any {
 
 //	Extract all data points that match the device profile
 function racing_line_points(data: Array<any>, device_profile: { log_indicies: any }): Array<RacingLinePoint> {
-	window.console.log('parser.racing_line_points');
+	window.console.log('parser.racing_line_points')
 
-	const racing_line_points = new Array<RacingLinePoint>();
+	const racing_line_points = new Array<RacingLinePoint>()
 	let latitude: number | null = null
 	let longitude: number | null = null
 	data.forEach(function (row, index) {
 		//	TODO: Interpolation, or does smoothing already cover that??
 
-		latitude = row[_.get(device_profile, 'log_indicies.gps.latitude')];
-		longitude = row[_.get(device_profile, 'log_indicies.gps.longitude')];
+		latitude = row[_.get(device_profile, 'log_indicies.gps.latitude')]
+		longitude = row[_.get(device_profile, 'log_indicies.gps.longitude')]
 
 		//	Skip header row and rows without GPS coords
 		if (
@@ -41,11 +41,11 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 		) {
 			const temp: any = {}
 
-			references.log_to_point(temp, row, device_profile, 'g', ['x', 'y', 'z']);
-			references.log_to_point(temp, row, device_profile, 'rotation', ['yaw', 'pitch', 'roll']);
-			references.log_to_point(temp, row, device_profile, 'timing', ['interval', 'utc']);
-			references.log_to_point(temp, row, device_profile, 'performance', ['speed', 'current_lap']);
-			references.log_to_point(temp, row, device_profile, 'diagnostics', ['coolant_temperature', 'oil_temperature', 'oil_pressure', 'battery_voltage']);
+			references.log_to_point(temp, row, device_profile, 'g', ['x', 'y', 'z'])
+			references.log_to_point(temp, row, device_profile, 'rotation', ['yaw', 'pitch', 'roll'])
+			references.log_to_point(temp, row, device_profile, 'timing', ['interval', 'utc'])
+			references.log_to_point(temp, row, device_profile, 'performance', ['speed', 'current_lap'])
+			references.log_to_point(temp, row, device_profile, 'diagnostics', ['coolant_temperature', 'oil_temperature', 'oil_pressure', 'battery_voltage'])
 
 			const racing_line_point: RacingLinePoint = {
 				coordinates: {
@@ -63,19 +63,19 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 				timing: temp.timing,
 			}
 
-			racing_line_points.push(racing_line_point);
+			racing_line_points.push(racing_line_point)
 		}
-	});
+	})
 
-	return racing_line_points;
+	return racing_line_points
 }
 
 //	Isolate lat/long coordinates from the data
 // TODO: Unused
 // function gps(data, device_profile): any {
-// 	window.console.log('parser.gps');
+// 	window.console.log('parser.gps')
 
-// 	const gps_coords = [];
+// 	const gps_coords = []
 // 	data.forEach(function (row, index) {
 // 		//	Skip header row and rows without GPS coords
 // 		if (
@@ -86,20 +86,20 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 			gps_coords.push({
 // 				lat: row[_.get(device_profile, 'log_indicies.gps.latitude')],
 // 				long: row[_.get(device_profile, 'log_indicies.gps.longitude')]
-// 			});
+// 			})
 // 		}
-// 	});
-// 	return gps_coords;
+// 	})
+// 	return gps_coords
 // }
 
 //	Identify lap boundaries from the data
 // TODO: Unused
 // function laps(data, device_profile): any {
-// 	window.console.log('parser.laps');
+// 	window.console.log('parser.laps')
 
-// 	const lap_boundaries = [];
-// 	let current_lap = null;
-// 	let gps_index = 0;
+// 	const lap_boundaries = []
+// 	let current_lap = null
+// 	let gps_index = 0
 // 	data.forEach(function (row, index) {
 // 		//	Skip header row and rows without GPS coords
 // 		if (
@@ -108,60 +108,60 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 			&& _.isNull(_.get(row, 'coordinates.gps.longitude')) === false
 // 		) {
 // 			if (current_lap !== _.get(row, 'performance.current_lap')) {
-// 				current_lap = _.get(row, 'performance.current_lap');
-// 				lap_boundaries.push(gps_index);
+// 				current_lap = _.get(row, 'performance.current_lap')
+// 				lap_boundaries.push(gps_index)
 // 			}
-// 			gps_index++;
+// 			gps_index++
 // 		}
-// 	});
+// 	})
 
 // 	//	Remove the '0' boundary
-// 	lap_boundaries.splice(0, 1);
+// 	lap_boundaries.splice(0, 1)
 
-// 	return lap_boundaries;
+// 	return lap_boundaries
 // }
 
 //	Determine the outer bounds of the data in lat/long
 // TODO: Unused
 // function bounds(data): any {
-// 	window.console.log('parser.bounds');
+// 	window.console.log('parser.bounds')
 
 // 	const bounds_coords = {
 // 		'latitude_northmost': null,
 // 		'latitude_southmost': null,
 // 		'longitude_westmost': null,
 // 		'longitude_eastmost': null
-// 	};
+// 	}
 // 	data.forEach(function (row, index) {
-// 		const latitude = _.get(row, 'coordinates.gps.latitude');
-// 		const longitude = _.get(row, 'coordinates.gps.longitude');
+// 		const latitude = _.get(row, 'coordinates.gps.latitude')
+// 		const longitude = _.get(row, 'coordinates.gps.longitude')
 
 // 		if (_.isNull(bounds_coords.latitude_northmost) === true || latitude > bounds_coords.latitude_northmost) {
-// 			bounds_coords.latitude_northmost = latitude;
+// 			bounds_coords.latitude_northmost = latitude
 // 		}
 
 // 		if (_.isNull(bounds_coords.latitude_southmost) === true || latitude < bounds_coords.latitude_southmost) {
-// 			bounds_coords.latitude_southmost = latitude;
+// 			bounds_coords.latitude_southmost = latitude
 // 		}
 
 // 		if (_.isNull(bounds_coords.longitude_westmost) === true || longitude > bounds_coords.longitude_westmost) {
-// 			bounds_coords.longitude_westmost = longitude;
+// 			bounds_coords.longitude_westmost = longitude
 // 		}
 
 // 		if (_.isNull(bounds_coords.longitude_eastmost) === true || longitude < bounds_coords.longitude_eastmost) {
-// 			bounds_coords.longitude_eastmost = longitude;
+// 			bounds_coords.longitude_eastmost = longitude
 // 		}
-// 	});
-// 	return bounds_coords;
+// 	})
+// 	return bounds_coords
 // }
 
 //	Convert lat/long to cartesian (x, y, z) coordinates
 // TODO: Unused
 // function cartesian(data): any {
-// 	window.console.log('parser.cartesian');
+// 	window.console.log('parser.cartesian')
 
 // 	data.forEach(function (point, index) {
-// 		const cartesian_point = ecef(_.get(point, 'coordinates.gps.latitude'), _.get(point, 'coordinates.gps.longitude'));
+// 		const cartesian_point = ecef(_.get(point, 'coordinates.gps.latitude'), _.get(point, 'coordinates.gps.longitude'))
 // 		if (
 // 			_.isNaN(cartesian_point[0]) === false
 // 			&& _.isNaN(cartesian_point[1]) === false
@@ -171,23 +171,23 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 				'x': cartesian_point[0],
 // 				'y': cartesian_point[1],
 // 				'z': cartesian_point[2]
-// 			});
+// 			})
 // 		}
-// 	});
+// 	})
 // }
 
 //	Shift the data by the provided amount
 // TODO: Unused
 // function recenter(data, x, y, z): any {
-// 	window.console.log('parser.recenter');
+// 	window.console.log('parser.recenter')
 
 // 	data.forEach(function (point, index) {
 // 		_.set(data, '[' + index + '].coordinates.cartesian.raw', {
 // 			'x': (_.get(point, 'coordinates.cartesian.raw.x') - x),
 // 			'y': (_.get(point, 'coordinates.cartesian.raw.y') - y),
 // 			'z': (_.get(point, 'coordinates.cartesian.raw.z') - z)
-// 		});
-// 	});
+// 		})
+// 	})
 // }
 
 //	Smooth the data
@@ -198,7 +198,7 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 	// if (points === true) {
 	// 	bounds.forEach(function () {
 	// 		smoothed_points_by_bounds.push([])
-	// 	});
+	// 	})
 	// 	smoothed_points_by_bounds.push([])
 	// }
 
@@ -240,12 +240,12 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 			// if (points === true) {
 			// 	smoothed_points_by_bounds[bound_i].push(average_point)
 			// }
-		});
+		})
 
 		//	Convert to Vector3 to use some of the built-in methods
 		averaged_points.forEach(function (averaged_point, averaged_point_i) {
 			averaged_points[averaged_point_i] = new THREE.Vector3(averaged_point.x, averaged_point.y, averaged_point.z)
-		});
+		})
 
 		//	Parse both the unit vectors and distances leading from the
 		//	average point with the largest bounds, to the smallest
@@ -338,31 +338,31 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 
 		return smoothed_point
 	}
-	// });
+	// })
 
 	// if (points === true) {
-	// 	return smoothed_points_by_bounds;
+	// 	return smoothed_points_by_bounds
 	// }
 
-	let index_test = 0;
-	let length = data.length;
-	let smoothed_points = [];
-	const temp_data = JSON.stringify(data);
-	let cloned_data = JSON.parse(temp_data);
-	let cloned_data_for_points = JSON.parse(temp_data);
+	let index_test = 0
+	let length = data.length
+	let smoothed_points = []
+	const temp_data = JSON.stringify(data)
+	let cloned_data = JSON.parse(temp_data)
+	let cloned_data_for_points = JSON.parse(temp_data)
 	const loop = setInterval(() => {
-		smoothed_points.push(smooth_by_averages(cloned_data, cloned_data_for_points.shift(), index_test, length, listener, event_name));
-		index_test++;
+		smoothed_points.push(smooth_by_averages(cloned_data, cloned_data_for_points.shift(), index_test, length, listener, event_name))
+		index_test++
 		if (index_test >= length) {
-			clearInterval(loop);
+			clearInterval(loop)
 		}
-	}, interval);
+	}, interval)
 }
 
 //	Vector to the center of the bounds
 // TODO: Unused
 // function vector_to_center(data:Coordinate.GeographicBounds): Array<number> {
-// 	window.console.log('parser.vector_to_center');
+// 	window.console.log('parser.vector_to_center')
 
 // 	return ecef(
 // 		((data.latitude_northmost + data.latitude_southmost) / 2),
@@ -371,7 +371,7 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 // }
 
 //	Vector to the north pole
-function vector_to_north_pole(): Array<[ number, number, number, ]> {
+function vector_to_north_pole(): Array<number> {
 	window.console.log('parser.vector_to_north_pole')
 
 	return ecef(90, 0)
