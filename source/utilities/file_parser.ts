@@ -39,6 +39,7 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 			&& _.isNull(latitude) === false
 			&& _.isNull(longitude) === false
 		) {
+			// TODO: Hack
 			const temp: any = {}
 
 			references.log_to_point(temp, row, device_profile, 'g', ['x', 'y', 'z'])

@@ -3,7 +3,6 @@ import isString from 'lodash/isString'
 import map from 'lodash/map'
 import {
 	Coordinate,
-	LoadedValues,
 	RacingLinePoint,
 	WorkerTask,
 } from './../models/racing_lines'

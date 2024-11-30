@@ -1,6 +1,8 @@
 import {
+	Coordinate,
 	LoadedValues,
 	RacingLinePoint,
+	WorkerTask,
 } from './../models/racing_lines'
 
 //	Parse the CSV file into:
@@ -15,33 +17,33 @@ function parse_file(worker: Worker, files: FileList | null, callback: Function):
 
 		const values: LoadedValues = {
 			points: new Array<RacingLinePoint>(),
-			bounds_coords: {
-				latitude_northmost: 0,
-				latitude_southmost: 0,
-				longitude_eastmost: 0,
-				longitude_westmost: 0,
+			bounds_coords: <Coordinate.GeographicBounds>{
+				latitude_northmost: NaN,
+				latitude_southmost: NaN,
+				longitude_eastmost: NaN,
+				longitude_westmost: NaN,
 			},
 			vector_to_center: new Array<number>(),
 			lap_boundaries: new Array<number>(),
 		}
 
-		let parsed_message = null
+		let parsed_message: (LoadedValues & { command: string }) | null = null
 		let worker_message = function (event: MessageEvent): void {
-			parsed_message = JSON.parse(event.data)
+			parsed_message = JSON.parse(event.data) as (LoadedValues & { command: string })
 
 			switch (parsed_message.command) {
-				case 'metadata':
+				case WorkerTask.LoadMetadata:
 					values.bounds_coords = parsed_message.bounds_coords
 					values.vector_to_center = parsed_message.vector_to_center
 					values.lap_boundaries = parsed_message.lap_boundaries
 					break
 
-				case 'points':
+				case WorkerTask.LoadPointsBatch:
 					values.points = values.points.concat(parsed_message.points)
 					break
 
-				case 'terminate':
-					parsed_message = undefined
+				case WorkerTask.Terminate:
+					parsed_message = null
 
 					resolve(values)
 					worker.removeEventListener('message', worker_message)

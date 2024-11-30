@@ -52,11 +52,15 @@ function start_web_ui(): void {
 }
 
 function allow_file_upload(): void {
+	window.console.log('allow_file_upload')
+
 	const file_uploader = document.getElementById('file_upload') as HTMLInputElement
 	file_loader.add_listener(workers.loader, file_uploader, file_finished_loading)
 }
 
 function file_finished_loading(values: LoadedValues): void {
+	window.console.log('file_finished_loading')
+
 	render_racing_line(values)
 	allow_file_upload()
 }
