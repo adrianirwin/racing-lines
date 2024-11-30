@@ -39,10 +39,9 @@ interface Timing {
 export enum WorkerTask {
 	GraphPointsBatch = 'GRAPH_POINTS_BATCH',
 	GraphPointsFinished = 'GRAPH_POINTS_FINISHED',
-	LoadMetadata = 'LOAD_METADATA',
-	LoadPointsBatch = 'LOAD_POINTS_BATCH',
-	LoadPointsFinished = 'LOAD_POINTS_FINISHED',
+	MetadataLoaded = 'METADATA_LOADED',
 	PointsGraphed = 'POINTS_GRAPHED',
+	PointsLoaded = 'POINTS_LOADED',
 	Terminate = 'TERMINATE',
 }
 

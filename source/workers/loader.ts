@@ -188,27 +188,30 @@ self.addEventListener(
 			lap_boundaries.splice(0, 1)
 
 			self.postMessage(JSON.stringify({
-				command: WorkerTask.LoadMetadata,
+				command:			WorkerTask.MetadataLoaded,
 				bounds_coords,
 				vector_to_center,
 				lap_boundaries,
 			}))
 
 			let loop_index = 0
-			const loop_size = 2000
+			const loop_size = 200 // TODO: Perf test the ideal size
 			const loop_limit = racing_line_points.length
 
 			const interval_id = self.setInterval((): void => {
 				if ((loop_index * loop_size) < loop_limit) {
 					self.postMessage(JSON.stringify({
-						command: WorkerTask.LoadPointsBatch,
-						points: racing_line_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size))
+						command:			WorkerTask.PointsLoaded,
+						points:				racing_line_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
 					}))
 					loop_index++
-				} else {
+				}
+				else {
 					//	Clean up listeners in the main thread and stop the loop
 					self.clearInterval(interval_id)
-					self.postMessage(JSON.stringify({ command: WorkerTask.Terminate }))
+					self.postMessage(JSON.stringify({
+						command:			WorkerTask.Terminate,
+					}))
 				}
 			}, 1)
 

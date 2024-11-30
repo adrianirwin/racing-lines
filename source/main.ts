@@ -237,6 +237,7 @@ function render_racing_line(values: LoadedValues): void {
 			loop_index++
 		}
 		else {
+			window.clearInterval(interval_id)
 			workers.grapher.postMessage(JSON.stringify({
 				command:			WorkerTask.GraphPointsFinished,
 			}))
