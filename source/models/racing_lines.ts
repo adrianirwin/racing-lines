@@ -36,6 +36,13 @@ interface Timing {
 	utc: number
 }
 
+export enum WorkerTask {
+	GraphPointsBatch = 'GRAPH_POINTS_BATCH',
+	GraphPointsFinished = 'GRAPH_POINTS_FINISHED',
+	PointsGraphed = 'POINTS_GRAPHED',
+	Terminate = 'TERMINATE',
+}
+
 export interface RacingLinePoint {
 	coordinates: {
 		cartesian: {

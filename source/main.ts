@@ -6,6 +6,7 @@ import {
 	Coordinate,
 	LoadedValues,
 	RacingLinePoint,
+	WorkerTask,
 } from './models/racing_lines'
 import * as file_parser from './utilities/file_parser'
 import * as file_loader from './utilities/file_loader'
@@ -19,9 +20,9 @@ import './styles/main.scss'
 
 //	Web Workers
 const workers = {
+	grapher: new Worker(new URL('./workers/grapher.js', import.meta.url)),
 	loader: new Worker(new URL('./workers/loader.js', import.meta.url)),
 	smoother: new Worker(new URL('./workers/smoother.js', import.meta.url)),
-	grapher: new Worker(new URL('./workers/grapher.js', import.meta.url)),
 }
 
 //	Globals
@@ -185,22 +186,25 @@ function render_racing_line(values: LoadedValues): void {
 	})
 
 	//	Draw raw GPS racing line
-	let coords = null
-	let parsed_message = null
+	let coords: Array<string> | null = null
+	let parsed_message: {
+		command: string,
+		points: Array<Coordinate.Cartesian3D>,
+		index: number,
+	} | null = null
 	let grapher_message = function (event: MessageEvent) {
 		parsed_message = JSON.parse(event.data)
 
-		switch (parsed_message.command) {
-			case 'point':
+		switch (parsed_message?.command) {
+			case WorkerTask.PointsGraphed:
 				coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
-				coords = coords.join(', ')
 
-				raw_line.setAttribute('racing_line',  { streamed_coords: coords, streamed_index: parsed_message.index })
+				raw_line.setAttribute('racing_line',  { streamed_coords: coords.join(', '), streamed_index: parsed_message.index })
 				break
 
-			case 'terminate':
-				coords = undefined
-				parsed_message = undefined
+			case WorkerTask.Terminate:
+				coords = null
+				parsed_message = null
 
 				workers.grapher.removeEventListener('message', grapher_message)
 
@@ -219,18 +223,18 @@ function render_racing_line(values: LoadedValues): void {
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
 			workers.grapher.postMessage(JSON.stringify({
-				'command': 'points',
-				'points': second_lap_test.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
+				command:			WorkerTask.GraphPointsBatch,
+				index:				(loop_index * loop_size),
+				path_floor:			'coordinates.cartesian.raw',
+				points:				second_lap_test.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
+				steps:				loop_size,
+				value_function:		util_graphing.line.name,
 			}))
 			loop_index++
 		}
 		else {
-			window.clearInterval(interval_id)
 			workers.grapher.postMessage(JSON.stringify({
-				'command': 'start',
-				'floor_path': 'coordinates.cartesian.raw',
-				'steps': 100,
-				'value_function': util_graphing.line.name,
+				command:			WorkerTask.GraphPointsFinished,
 			}))
 		}
 	}, 1)
