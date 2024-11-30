@@ -30,21 +30,24 @@ self.addEventListener(
 		switch (message.command) {
 			case WorkerTask.GraphPointsBatch:
 				self.postMessage(JSON.stringify({
-					command: WorkerTask.PointsGraphed,
-					points: value_function(
-						map(message.points, message.path_floor),
-						map(message.points, message.path_value || ''),
-						map(message.points, message.path_delta || ''),
-						message.index,
-						message.scale || 1.0,
-						message.steps,
-						message.offset_vector_coords || { x: 0, y: 0, z: 1 }
-					),
-					index: message.index,
+					command:		WorkerTask.PointsGraphed,
+					points:			value_function(
+										map(message.points, message.path_floor),
+										map(message.points, message.path_value || ''),
+										map(message.points, message.path_delta || ''),
+										message.index,
+										message.scale || 1.0,
+										message.steps,
+										message.offset_vector_coords || { x: 0, y: 0, z: 1 }
+									),
+					index:			message.index,
 				}))
 				break
+
 			case WorkerTask.GraphPointsFinished:
-				self.postMessage(JSON.stringify({ command: WorkerTask.Terminate }));
+				self.postMessage(JSON.stringify({
+					command:			WorkerTask.Terminate,
+				}))
 				break
 		}
 	}

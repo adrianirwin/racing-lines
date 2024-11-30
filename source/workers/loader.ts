@@ -14,8 +14,7 @@ import * as references from './../references'
 self.addEventListener(
 	'message',
 	(event: MessageEvent): void => {
-		const message: FileList = event.data
-
+		const fileList: FileList = event.data
 		const fileReader = new FileReader()
 
 		fileReader.onload = (): void => {
@@ -40,7 +39,7 @@ self.addEventListener(
 			const device_profile: any = references.device('RaceCapture/Pro MK3')
 
 			parsed.data.forEach((row: Array<number>, index: number): void => {
-				//	TODO: Interpolation
+				//	TODO: Interpolation (did I mean smoothing?)
 
 				const latitude = row[get(device_profile, 'log_indicies.gps.latitude')]
 				const longitude = row[get(device_profile, 'log_indicies.gps.longitude')]
@@ -48,7 +47,7 @@ self.addEventListener(
 				const current_lap = row[get(device_profile, 'log_indicies.performance.current_lap')]
 
 				//	Skip header row and rows without GPS coords
-				//	TODO: Don't skip the non-GPS rows
+				//	TODO: Don't skip the non-GPS rows?
 				if (
 					index > 0
 					&& isNull(latitude) === false
@@ -58,22 +57,10 @@ self.addEventListener(
 					//	Populate new data point
 
 					//	A: Parsed values
-					// const point = new references.Racing_Line_Point()
 					const cartesian_coords = ecef(latitude, longitude)
 
 					// TODO: Hack
 					const temp: any = {}
-
-					// references.value_to_point(point, 'coordinates.gps', {
-					// 	'latitude': latitude,
-					// 	'longitude': longitude,
-					// })
-
-					// references.value_to_point(point, 'coordinates.cartesian.raw', {
-					// 	'x': cartesian_coords[0],
-					// 	'y': cartesian_coords[1],
-					// 	'z': cartesian_coords[2],
-					// })
 
 					references.log_to_point(temp, row, device_profile, 'g', ['x', 'y', 'z'])
 					references.log_to_point(temp, row, device_profile, 'rotation', ['yaw', 'pitch', 'roll'])
@@ -140,16 +127,11 @@ self.addEventListener(
 				((bounds_coords.longitude_westmost + bounds_coords.longitude_eastmost) / 2)
 			)
 
-			//	Re-center the XYZ points to have the center of the bounded area align to { x: 0, y: 0, z: 0 }
+			//	Re-center the XYZ points to have the center of the bounded area aligns to { x: 0, y: 0, z: 0 }
 			racing_line_points.forEach((point: RacingLinePoint, index: number): void => {
 				racing_line_points[index].coordinates.cartesian.raw.x -= vector_to_center[0]
 				racing_line_points[index].coordinates.cartesian.raw.y -= vector_to_center[1]
 				racing_line_points[index].coordinates.cartesian.raw.z -= vector_to_center[2]
-				// set(racing_line_points, '[' + index + '].coordinates.cartesian.raw', {
-				// 	x: (get(point, 'coordinates.cartesian.raw.x') - vector_to_center[0]),
-				// 	y: (get(point, 'coordinates.cartesian.raw.y') - vector_to_center[1]),
-				// 	z: (get(point, 'coordinates.cartesian.raw.z') - vector_to_center[2])
-				// })
 			})
 
 			// TODO: Quick and dirty delta smoothing -- move to somewhere better
@@ -214,8 +196,7 @@ self.addEventListener(
 					}))
 				}
 			}, 1)
-
 		}
 
-		fileReader.readAsDataURL(message[0])
+		fileReader.readAsDataURL(fileList.item(0) as Blob)
 })
