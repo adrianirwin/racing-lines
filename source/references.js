@@ -47,26 +47,6 @@ function Log_Indicies () {
 	this.diagnostics =	{ 'coolant_temperature': null, 'oil_temperature': null, 'oil_pressure': null, 'battery_voltage': null };
 }
 
-//	Structure of the racing line points
-function Racing_Line_Point() {
-	//	Parsed values
-	this.coordinates =	{
-		'gps': { 'latitude': null, 'longitude': null },
-		'cartesian': {
-			'raw':		{ 'x': null, 'y': null, 'z': null },
-			'smoothed':	{ 'x': null, 'y': null, 'z': null }
-		}
-	};
-	this.g =			{ 'x': null, 'y': null, 'z': null };
-	this.rotation =		{ 'yaw': null, 'pitch': null, 'roll': null };
-	this.timing =		{ 'interval': null, 'utc': null };
-	this.performance =	{ 'speed': null, 'current_lap': null };
-	this.diagnostics =	{ 'coolant_temperature': null, 'oil_temperature': null, 'oil_pressure': null, 'battery_voltage': null };
-
-	//	Inferred Values
-	this.delta =		{ 'speed': null };
-}
-
 //	Structure of the pre-programmed device profiles
 const device_profiles = {
 	'RaceCapture/Pro MK3': { 'log_indicies': new Log_Indicies() }
@@ -87,4 +67,4 @@ assign_indicies(device_profiles, 'RaceCapture/Pro MK3', {
 	'diagnostics.coolant_temperature': 2, 'diagnostics.oil_temperature': 3, 'diagnostics.oil_pressure': 4, 'diagnostics.battery_voltage': 5
 });
 
-export { device, Racing_Line_Point, value_to_point, log_to_point, delta_to_point };
+export { device, value_to_point, log_to_point, delta_to_point };
