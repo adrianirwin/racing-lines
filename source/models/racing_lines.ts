@@ -42,6 +42,9 @@ export enum WorkerTask {
 	MetadataLoaded = 'METADATA_LOADED',
 	PointsGraphed = 'POINTS_GRAPHED',
 	PointsLoaded = 'POINTS_LOADED',
+	PointsSmoothed = 'POINTS_SMOOTHER',
+	SmoothPointsBatch = 'SMOOTH_POINTS_BATCH',
+	SmoothPointsFinished = 'SMOOTH_POINTS_FINISHED',
 	Terminate = 'TERMINATE',
 }
 

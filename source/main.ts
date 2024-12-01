@@ -263,17 +263,20 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 
 	//	Run smoothing algorithm on current lap
 	let index = 0
-	let smoothed_coords = null
-	let parsed_message = null
+	let smoothed_coords: Array<string> | null = null
+	let parsed_message: {
+		command: string,
+		points: Array<Coordinate.Cartesian3D>,
+		index: number,
+	} | null = null
 	let smoother_message = function (event: MessageEvent) {
 		parsed_message = JSON.parse(event.data)
 
-		switch (parsed_message.command) {
-			case 'points':
+		switch (parsed_message?.command) {
+			case WorkerTask.PointsSmoothed:
 				smoothed_coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
-				smoothed_coords = smoothed_coords.join(', ')
 
-				smoothed_line.setAttribute('racing_line', { streamed_coords: smoothed_coords, streamed_index: parsed_message.index })
+				smoothed_line.setAttribute('racing_line', { streamed_coords: smoothed_coords.join(', '), streamed_index: parsed_message.index })
 
 				//	Update the existing dataset
 				for (index = 0, length = parsed_message.points.length; index < length; index++) {
@@ -281,9 +284,9 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 				}
 				break
 
-			case 'terminate':
-				smoothed_coords = undefined
-				parsed_message = undefined
+			case WorkerTask.Terminate:
+				smoothed_coords = null
+				parsed_message = null
 
 				workers.smoother.removeEventListener('message', smoother_message)
 
@@ -302,18 +305,20 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
 			workers.smoother.postMessage(JSON.stringify({
-				'command': 'points',
-				'points': lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
+				command:			WorkerTask.SmoothPointsBatch,
+				bounds:				[320, 160, 80, 40, 20],
+				index:				(loop_index * loop_size),
+				points:				lap_points.slice(Math.max(((loop_index * loop_size) - 320), 0), (((loop_index + 1) * loop_size) + 320)),
+				start_offset:		Math.min((loop_index * loop_size), 320),
+				steps:				loop_size,
+				weights:			[0.03, 0.07, 0.9],
 			}))
 			loop_index++
 		}
 		else {
 			window.clearInterval(interval_id)
 			workers.smoother.postMessage(JSON.stringify({
-				'command': 'start',
-				'bounds': [320, 160, 80, 40, 20],
-				'weights': [0.03, 0.07, 0.9],
-				'steps': 50,
+				command:			WorkerTask.SmoothPointsFinished,
 			}))
 		}
 	}, 1)
