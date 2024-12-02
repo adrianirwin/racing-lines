@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import * as _ from 'lodash'
 import * as Papa from 'papaparse'
 import * as ecef from 'geodetic-to-ecef'
-import * as references from '../references.js'
+import * as devices from './../utilities/devices'
 
 import {
 	Coordinate,
@@ -42,11 +42,11 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 			// TODO: Hack
 			const temp: any = {}
 
-			references.log_to_point(temp, row, device_profile, 'g', ['x', 'y', 'z'])
-			references.log_to_point(temp, row, device_profile, 'rotation', ['yaw', 'pitch', 'roll'])
-			references.log_to_point(temp, row, device_profile, 'timing', ['interval', 'utc'])
-			references.log_to_point(temp, row, device_profile, 'performance', ['speed', 'current_lap'])
-			references.log_to_point(temp, row, device_profile, 'diagnostics', ['coolant_temperature', 'oil_temperature', 'oil_pressure', 'battery_voltage'])
+			devices.log_to_point(temp, row, device_profile, 'g', ['x', 'y', 'z'])
+			devices.log_to_point(temp, row, device_profile, 'rotation', ['yaw', 'pitch', 'roll'])
+			devices.log_to_point(temp, row, device_profile, 'timing', ['interval', 'utc'])
+			devices.log_to_point(temp, row, device_profile, 'performance', ['speed', 'current_lap'])
+			devices.log_to_point(temp, row, device_profile, 'diagnostics', ['coolant_temperature', 'oil_temperature', 'oil_pressure', 'battery_voltage'])
 
 			const racing_line_point: RacingLinePoint = {
 				coordinates: {

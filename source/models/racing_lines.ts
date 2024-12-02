@@ -31,9 +31,45 @@ export namespace Coordinate {
 	}
 }
 
+interface CarDiagnostics {
+	battery_voltage: number
+	coolant_temperature: number
+	oil_pressure: number
+	oil_temperature: number
+}
+
 interface Timing {
 	interval: number
 	utc: number
+}
+
+interface LapPerformance {
+	current_lap: number
+	speed: number
+}
+
+interface DeltaPerformance {
+	speed: number
+}
+
+export namespace Device {
+	export interface LogIndicies {
+		gps: Coordinate.Geographic
+		g: Coordinate.Cartesian3D
+		rotation: Coordinate.Orientation
+		timing: Timing
+		performance: LapPerformance
+		diagnostics: CarDiagnostics
+	}
+	export class LogIndicies {
+
+	}
+	export interface Profile {
+		log_indicies: LogIndicies
+	}
+	export interface Profiles {
+		[name: string]: Profile
+	}
 }
 
 export enum WorkerTask {
@@ -56,20 +92,10 @@ export interface RacingLinePoint {
 		}
 		gps: Coordinate.Geographic
 	}
-	delta: {
-		speed: number
-	}
-	diagnostics: {
-		battery_voltage: number
-		coolant_temperature: number
-		oil_pressure: number
-		oil_temperature: number
-	}
+	delta: DeltaPerformance
+	diagnostics: CarDiagnostics
 	g: Coordinate.Cartesian3D
-	performance: {
-		current_lap: number
-		speed: number
-	}
+	performance: LapPerformance
 	rotation: Coordinate.Orientation
 	timing: Timing
 }

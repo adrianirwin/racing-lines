@@ -1,7 +1,6 @@
 import * as AFRAME from 'aframe'
 import * as THREE from 'three'
 import * as _ from 'lodash'
-import * as references from './references'
 import {
 	Coordinate,
 	LoadedValues,

@@ -9,7 +9,7 @@ import {
 	RacingLinePoint,
 	WorkerTask,
 } from './../models/racing_lines'
-import * as references from './../references'
+import * as devices from './../utilities/devices'
 
 self.addEventListener('message', (event: MessageEvent): void => {
 	const fileList: FileList = event.data
@@ -34,7 +34,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		let previous_point: RacingLinePoint | null = null
 
 		//	TODO: Move out of here - add an alternate command to include this
-		const device_profile: any = references.device('RaceCapture/Pro MK3')
+		const device_profile: any = devices.device('RaceCapture/Pro MK3')
 
 		parsed.data.forEach((row: Array<number>, index: number): void => {
 			//	TODO: Interpolation (did I mean smoothing?)
@@ -60,14 +60,14 @@ self.addEventListener('message', (event: MessageEvent): void => {
 				// TODO: Hack
 				const temp: any = {}
 
-				references.log_to_point(temp, row, device_profile, 'g', ['x', 'y', 'z'])
-				references.log_to_point(temp, row, device_profile, 'rotation', ['yaw', 'pitch', 'roll'])
-				references.log_to_point(temp, row, device_profile, 'timing', ['interval', 'utc'])
-				references.log_to_point(temp, row, device_profile, 'performance', ['speed', 'current_lap'])
-				references.log_to_point(temp, row, device_profile, 'diagnostics', ['coolant_temperature', 'oil_temperature', 'oil_pressure', 'battery_voltage'])
+				devices.log_to_point(temp, row, device_profile, 'g', ['x', 'y', 'z'])
+				devices.log_to_point(temp, row, device_profile, 'rotation', ['yaw', 'pitch', 'roll'])
+				devices.log_to_point(temp, row, device_profile, 'timing', ['interval', 'utc'])
+				devices.log_to_point(temp, row, device_profile, 'performance', ['speed', 'current_lap'])
+				devices.log_to_point(temp, row, device_profile, 'diagnostics', ['coolant_temperature', 'oil_temperature', 'oil_pressure', 'battery_voltage'])
 
 				//	B: Inferred values
-				references.delta_to_point(temp, previous_point, 'delta', 'speed', 'performance', 'speed')
+				devices.delta_to_point(temp, previous_point, 'delta', 'speed', 'performance', 'speed')
 
 				//	Store the points
 				const racing_line_point: RacingLinePoint = {
@@ -78,11 +78,11 @@ self.addEventListener('message', (event: MessageEvent): void => {
 								y: cartesian_coords[1],
 								z: cartesian_coords[2],
 							},
-							smoothed: { x: 0, y: 0, z: 0, },
+							smoothed: { x: NaN, y: NaN, z: NaN, },
 						},
 						gps: { latitude, longitude, },
 					},
-					delta: { speed: 0, },
+					delta: { speed: NaN, },
 					diagnostics: temp.diagnostics,
 					g: temp.g,
 					performance: temp.performance,
