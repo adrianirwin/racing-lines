@@ -82,7 +82,9 @@ self.addEventListener('message', (event: MessageEvent): void => {
 						},
 						gps: { latitude, longitude, },
 					},
-					delta: { speed: NaN, },
+					delta: {
+						speed: temp.delta.speed,
+					},
 					diagnostics: temp.diagnostics,
 					g: temp.g,
 					performance: temp.performance,
@@ -135,24 +137,25 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		// TODO: Quick and dirty delta smoothing -- move to somewhere better
 		racing_line_points.forEach((point: RacingLinePoint, index: number): void => {
 
+			// TODO: Fix this get/|| mess for handling NaN/null values
 			const surrounding_values = [
-				get(racing_line_points, '[' + (index - 8) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index - 7) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index - 6) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index - 5) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index - 4) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index - 3) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index - 2) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index - 1) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 0) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 1) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 2) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 3) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 4) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 5) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 6) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 7) + '].delta.speed', 0),
-				get(racing_line_points, '[' + (index + 8) + '].delta.speed', 0),
+				(get(racing_line_points[(index - 8)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index - 7)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index - 6)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index - 5)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index - 4)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index - 3)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index - 2)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index - 1)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 0)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 1)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 2)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 3)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 4)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 5)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 6)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 7)], 'delta.speed', 0) || 0),
+				(get(racing_line_points[(index + 8)], 'delta.speed', 0) || 0),
 			]
 
 			const total = surrounding_values.reduce((accumulator: number, current: number): number => {

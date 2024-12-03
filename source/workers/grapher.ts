@@ -39,7 +39,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 									map(message.points, message.path_floor),
 									map(message.points, message.path_value || ''),
 									map(message.points, message.path_delta || ''),
-									message.index,
+									message.index, // TODO: No longer needed here
 									message.scale || 1.0,
 									message.steps,
 									message.offset_vector_coords || { x: 0, y: 0, z: 1 }

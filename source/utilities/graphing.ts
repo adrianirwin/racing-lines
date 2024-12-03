@@ -24,14 +24,14 @@ export function line(floor_points: any, values: any, deltas: any, index: any, sc
 export function offset_line(floor_points: any, values: any, deltas: any, index: any, scale: any, steps: any, offset_vector_coords: any): { values: Array<Coordinate.Cartesian3D> } {
 	const points = { values: new Array<Coordinate.Cartesian3D>() }
 
-	for (let count = 0; count < steps && isUndefined(floor_points[(index + count)]) === false; count++) {
+	for (let i = 0, l = floor_points.length; i < l; i++) {
 		const offset_vector = new THREE.Vector3(offset_vector_coords.x, offset_vector_coords.y, offset_vector_coords.z).normalize()
-		const point_vec = new THREE.Vector3(floor_points[(index + count)].x, floor_points[(index + count)].y, floor_points[(index + count)].z)
+		const point_vec = new THREE.Vector3(floor_points[i].x, floor_points[i].y, floor_points[i].z)
 
-		offset_vector.multiplyScalar((values[(index + count)] * scale))
+		offset_vector.multiplyScalar((values[i] * scale))
 		point_vec.add(offset_vector)
 
-		points.values[count] = {
+		points.values[i] = {
 			x: point_vec.x,
 			y: point_vec.y,
 			z: point_vec.z,
@@ -45,11 +45,11 @@ export function offset_line(floor_points: any, values: any, deltas: any, index: 
 export function offset_fill(floor_points: any, values: any, deltas: any, index: any, scale: any, steps: any, offset_vector_coords: any): any {
 	const points = { floors: new Array<Coordinate.Cartesian3D>() }
 
-	for (let count = 0; count < steps && isUndefined(floor_points[(index + count)]) === false; count++) {
-		points.floors[count] = {
-			x: floor_points[(index + count)].x,
-			y: floor_points[(index + count)].y,
-			z: floor_points[(index + count)].z,
+	for (let i = 0, l = floor_points.length; i < l; i++) {
+		points.floors[i] = {
+			x: floor_points[i].x,
+			y: floor_points[i].y,
+			z: floor_points[i].z,
 		}
 	}
 
@@ -63,8 +63,8 @@ export function offset_fill(floor_points: any, values: any, deltas: any, index: 
 export function delta_fill(floor_points: any, values: any, deltas: any, index: any, scale: any, steps: any, offset_vector_coords: any): any {
 	const points = { deltas: new Array<number>() }
 
-	for (let count = 0; count < steps && isUndefined(deltas[(index + count)]) === false; count++) {
-		points.deltas[count] = deltas[(index + count)]
+	for (let i = 0, l = floor_points.length; i < l; i++) {
+		points.deltas[i] = deltas[i]
 	}
 
 	return assign({},

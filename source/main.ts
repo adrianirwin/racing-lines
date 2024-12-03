@@ -359,8 +359,8 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 	let grapher_message = function (event: MessageEvent) {
 		parsed_message = JSON.parse(event.data)
 
-		switch (parsed_message.command) {
-			case 'point':
+		switch (parsed_message?.command) {
+			case WorkerTask.PointsGraphed:
 				//	"Grow" the graphed line
 				value_points = parsed_message.points.values
 				floor_points = parsed_message.points.floors
@@ -374,18 +374,13 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 				}
 
 				filled_coords = ordered_points.map(AFRAME.utils.coordinates.stringify)
-				filled_coords = filled_coords.join(', ')
-
 				line_coords = value_points.map(AFRAME.utils.coordinates.stringify)
-				line_coords = line_coords.join(', ')
 
-				delta_values = delta_points.join(', ')
-
-				graphed_line.setAttribute('filled_graph', { streamed_coords: filled_coords, streamed_deltas: delta_values, streamed_index: parsed_message.index })
-				graphed_line.setAttribute('line_graph', { streamed_coords: line_coords, streamed_index: parsed_message.index })
+				graphed_line.setAttribute('filled_graph', { streamed_coords: filled_coords.join(', '), streamed_deltas: delta_points.join(', '), streamed_index: parsed_message.index })
+				graphed_line.setAttribute('line_graph', { streamed_coords: line_coords.join(', '), streamed_index: parsed_message.index })
 				break
 
-			case 'terminate':
+			case WorkerTask.Terminate:
 				value_points = undefined
 				floor_points = undefined
 				filled_coords = undefined
@@ -407,22 +402,23 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
 			workers.grapher.postMessage(JSON.stringify({
-				'command': 'points',
-				'points': lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
+				command:				WorkerTask.GraphPointsBatch,
+				index:					(loop_index * loop_size),
+				path_delta:				'delta.speed',
+				path_floor:				'coordinates.cartesian.smoothed',
+				path_value:				'performance.speed',
+				points:					lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
+				offset_vector_coords:	{ x: up_vector.x, y: up_vector.y, z: up_vector.z },
+				scale:					0.5,
+				steps:					loop_size,
+				value_function:			util_graphing.delta_fill.name,
 			}))
 			loop_index++
 		}
 		else {
 			window.clearInterval(interval_id)
 			workers.grapher.postMessage(JSON.stringify({
-				'command': 'start',
-				'floor_path': 'coordinates.cartesian.smoothed',
-				'value_path': 'performance.speed',
-				'delta_path': 'delta.speed',
-				'scale': 0.5,
-				'steps': 50,
-				'offset_vector_coords': { 'x': up_vector.x, 'y': up_vector.y, 'z': up_vector.z },
-				'value_function': util_graphing.delta_fill.name,
+				command:			WorkerTask.GraphPointsFinished,
 			}))
 		}
 	}, 1)
