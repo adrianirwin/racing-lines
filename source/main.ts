@@ -1,5 +1,4 @@
 import * as AFRAME from 'aframe'
-import * as THREE from 'three'
 import * as _ from 'lodash'
 import {
 	Coordinate,
@@ -122,8 +121,8 @@ function start_vr_scene(): void {
 	//	TODO: This is a hack, just PR it back into A-Frame itself
 	// hand_controls_left.addEventListener('object3dset', function (event) {
 	// 	window.setTimeout((hand_controls_left: AFRAME.Entity, hand_controls_right: AFRAME.Entity) => {
-	// 		hand_controls_left.components['obj-model'].model.position.copy(new THREE.Vector3(-0.006, 0.004, -0.053))
-	// 		hand_controls_right.components['obj-model'].model.position.copy(new THREE.Vector3(0.006, 0.004, -0.053))
+	// 		hand_controls_left.components['obj-model'].model.position.copy(new AFRAME.THREE.Vector3(-0.006, 0.004, -0.053))
+	// 		hand_controls_right.components['obj-model'].model.position.copy(new AFRAME.THREE.Vector3(0.006, 0.004, -0.053))
 	// 	}, 250, hand_controls_left, hand_controls_right)
 	// })
 }
@@ -148,10 +147,10 @@ function render_racing_line(values: LoadedValues): void {
 	//	 - to the center of the track bounds in earth space
 	//	 - to the north pole ('up') in earth space
 	//	 - cross product along which to rotate to translate from one to the other
-	const v3_to_center =			new THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2])
+	const v3_to_center =			new AFRAME.THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2])
 	const vector_to_north_pole =	file_parser.vector_to_north_pole()
-	const v3_to_north_pole =		new THREE.Vector3(vector_to_north_pole[0], vector_to_north_pole[1], vector_to_north_pole[2])
-	let v3_cross =					new THREE.Vector3(0, 0, 0)
+	const v3_to_north_pole =		new AFRAME.THREE.Vector3(vector_to_north_pole[0], vector_to_north_pole[1], vector_to_north_pole[2])
+	let v3_cross =					new AFRAME.THREE.Vector3(0, 0, 0)
 
 	//	Compute the cross product
 	v3_cross.crossVectors(v3_to_center, v3_to_north_pole)
@@ -161,7 +160,7 @@ function render_racing_line(values: LoadedValues): void {
 	const angle =					v3_to_center.angleTo(v3_to_north_pole)
 
 	//	Quaternion describing the rotation
-	let reorientation_quaternion =	new THREE.Quaternion()
+	let reorientation_quaternion =	new AFRAME.THREE.Quaternion()
 	reorientation_quaternion.setFromAxisAngle(v3_cross, angle)
 
 	//	Select and create elements

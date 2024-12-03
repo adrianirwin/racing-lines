@@ -1,8 +1,8 @@
+import * as THREE from 'three'
 import get from 'lodash/get'
 import isUndefined from 'lodash/isUndefined'
 import last from 'lodash/last'
 import nth from 'lodash/nth'
-import * as THREE from 'three'
 import {
 	Coordinate,
 	RacingLinePoint,

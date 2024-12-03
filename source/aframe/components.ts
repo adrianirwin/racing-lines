@@ -2,47 +2,11 @@ import * as AFRAME from 'aframe'
 import * as _ from 'lodash'
 import {
 	Coordinate,
+	Schema,
 } from './../models/racing_lines'
 
-type SchemaToLiteralMapping<T> =
-	T extends Schema.ArrayNumber ?			Array<number> :
-	T extends Schema.Colour ?				string :
-	T extends Schema.Coords ?				Array<Coordinate.Cartesian3D> :
-	T extends Schema.Number ?				number :
-	T extends Schema.Quaternion ?			Coordinate.Quaternion :
-	T extends Schema.String ?				string :
-	T
 
-type SchemaToComponent<T> = {
-	[PropertyKey in keyof T]: SchemaToLiteralMapping<T[PropertyKey]>
-}
-
-namespace Schema {
-	export type ArrayNumber = {
-		type: string
-		default: Array<number>
-	}
-	export type Colour = {
-		type: string
-		default: string
-	}
-	export type Coords = {
-		parse: (value: string) => Array<Coordinate.Cartesian3D>
-		default: Array<Coordinate.Cartesian3D>
-	}
-	export type Number = {
-		type: string
-		default: number
-	}
-	export type Quaternion = {
-		type: string
-		default: Coordinate.Quaternion
-	}
-	export type String = {
-		type: string
-		default: string
-	}
-}
+//	Ground Plane
 
 interface GroundPlaneSchema {
 	colour: Schema.Colour
@@ -51,101 +15,12 @@ interface GroundPlaneSchema {
 	size: Schema.Number
 }
 
-interface GroundPlaneComponent extends SchemaToComponent<GroundPlaneSchema> {
+interface GroundPlaneData extends Schema.ToData<GroundPlaneSchema> {
 	ground_plane_dots_geometry: AFRAME.THREE.BufferGeometry
 }
 
 interface GroundPlane {
 	schema: GroundPlaneSchema
-}
-
-interface RacingLineSchema {
-	colour: Schema.Colour
-	coords: Schema.Coords
-	streamed_coords: Schema.String
-	streamed_index: Schema.Number
-	lap_boundaries: Schema.ArrayNumber
-	lap_offset_length: Schema.Number
-	length: Schema.Number
-	reorientation_quaternion: Schema.Quaternion
-}
-
-interface RacingLineComponent extends SchemaToComponent<RacingLineSchema> {
-	racing_line_geometry: AFRAME.THREE.BufferGeometry
-}
-
-interface RacingLine {
-	schema: RacingLineSchema
-}
-
-interface LineGraphSchema {
-	colour: Schema.Colour
-	coords: Schema.Coords
-	streamed_coords: Schema.String
-	streamed_index: Schema.Number
-	length: Schema.Number
-	reorientation_quaternion: Schema.Quaternion
-}
-
-interface LineGraphComponent extends SchemaToComponent<LineGraphSchema> {
-	value_geometry: AFRAME.THREE.BufferGeometry
-}
-
-interface LineGraph {
-	schema: LineGraphSchema
-}
-
-interface FilledGraphSchema {
-	colour: Schema.Colour
-	coords: Schema.Coords
-	streamed_coords: Schema.String
-	streamed_deltas: Schema.String
-	streamed_index: Schema.Number
-	length: Schema.Number
-	reorientation_quaternion: Schema.Quaternion
-}
-
-interface FilledGraphComponent extends SchemaToComponent<FilledGraphSchema> {
-	fill_geometry: AFRAME.THREE.BufferGeometry
-}
-
-interface FilledGraph {
-	schema: FilledGraphSchema
-}
-
-interface RacingDotsSchema {
-	colour: Schema.Colour
-	coords: Schema.Coords
-	reorientation_quaternion: Schema.Quaternion
-}
-
-interface RacingDotsComponent extends SchemaToComponent<RacingDotsSchema> {
-	racing_dots_geometry: AFRAME.THREE.BufferGeometry
-	racing_dots_material: AFRAME.THREE.PointsMaterial
-}
-
-interface RacingDots {
-	schema: RacingDotsSchema
-}
-
-interface SmoothingInspectorSchema {
-	colour: Schema.Colour
-	coords0: Schema.Coords
-	coords1: Schema.Coords
-	coords2: Schema.Coords
-	coords3: Schema.Coords
-	coords4: Schema.Coords
-	coords5: Schema.Coords
-	reorientation_quaternion: Schema.Quaternion
-}
-
-interface SmoothingInspectorComponent extends SchemaToComponent<SmoothingInspectorSchema> {
-	smoothing_geometry: AFRAME.THREE.BufferGeometry
-	smoothing_material: AFRAME.THREE.LineBasicMaterial
-}
-
-interface SmoothingInspector {
-	schema: SmoothingInspectorSchema
 }
 
 AFRAME.registerComponent<AFRAME.ComponentDefinition<GroundPlane>>('ground_plane', {
@@ -165,7 +40,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<GroundPlane>>('ground_plane'
 	},
 
 	init: function () {
-		const self = this as unknown as AFRAME.Component<GroundPlaneComponent>
+		const self = this as unknown as AFRAME.Component<GroundPlaneData>
 
 		self.data.ground_plane_dots_geometry = new AFRAME.THREE.BufferGeometry()
 
@@ -213,11 +88,33 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<GroundPlane>>('ground_plane'
 	},
 
 	remove: function () {
-		const self = this as unknown as AFRAME.Component<GroundPlaneComponent>
+		const self = this as unknown as AFRAME.Component<GroundPlaneData>
 
 		self.el.removeObject3D('ground_plane_dots')
 	}
 })
+
+
+//	Racing Lines
+
+interface RacingLineSchema {
+	colour: Schema.Colour
+	coords: Schema.Coords
+	streamed_coords: Schema.String
+	streamed_index: Schema.Number
+	lap_boundaries: Schema.ArrayNumber
+	lap_offset_length: Schema.Number
+	length: Schema.Number
+	reorientation_quaternion: Schema.Quaternion
+}
+
+interface RacingLineData extends Schema.ToData<RacingLineSchema> {
+	racing_line_geometry: AFRAME.THREE.BufferGeometry
+}
+
+interface RacingLine {
+	schema: RacingLineSchema
+}
 
 AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingLine>>('racing_line', {
 	schema: {
@@ -260,7 +157,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingLine>>('racing_line', 
 	},
 
 	init: function () {
-		const self = this as unknown as AFRAME.Component<RacingLineComponent>
+		const self = this as unknown as AFRAME.Component<RacingLineData>
 
 		//	Will the line 'grow' over time via the update call?
 		const will_grow = (self.data.length > 0)? true: false
@@ -338,7 +235,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingLine>>('racing_line', 
 	},
 
 	update: function (oldData) {
-		const self = this as unknown as AFRAME.Component<RacingLineComponent>
+		const self = this as unknown as AFRAME.Component<RacingLineData>
 
 		if (_.isEmpty(self.data.streamed_coords) === false) {
 			const position = self.data.racing_line_geometry.getAttribute('position')
@@ -372,11 +269,31 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingLine>>('racing_line', 
 	},
 
 	remove: function () {
-		const self = this as unknown as AFRAME.Component<RacingLineComponent>
+		const self = this as unknown as AFRAME.Component<RacingLineData>
 
 		self.el.removeObject3D('racing_line')
 	}
 })
+
+
+//	Line Graph
+
+interface LineGraphSchema {
+	colour: Schema.Colour
+	coords: Schema.Coords
+	streamed_coords: Schema.String
+	streamed_index: Schema.Number
+	length: Schema.Number
+	reorientation_quaternion: Schema.Quaternion
+}
+
+interface LineGraphData extends Schema.ToData<LineGraphSchema> {
+	value_geometry: AFRAME.THREE.BufferGeometry
+}
+
+interface LineGraph {
+	schema: LineGraphSchema
+}
 
 AFRAME.registerComponent<AFRAME.ComponentDefinition<LineGraph>>('line_graph', {
 	schema: {
@@ -413,7 +330,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<LineGraph>>('line_graph', {
 	},
 
 	init: function () {
-		const self = this as unknown as AFRAME.Component<LineGraphComponent>
+		const self = this as unknown as AFRAME.Component<LineGraphData>
 
 		//	Materials
 		const value_material = new AFRAME.THREE.LineBasicMaterial({
@@ -463,7 +380,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<LineGraph>>('line_graph', {
 	},
 
 	update: function (oldData) {
-		const self = this as unknown as AFRAME.Component<LineGraphComponent>
+		const self = this as unknown as AFRAME.Component<LineGraphData>
 
 		if (_.isEmpty(self.data.streamed_coords) === false) {
 			const position = self.data.value_geometry.getAttribute('position')
@@ -495,11 +412,32 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<LineGraph>>('line_graph', {
 	},
 
 	remove: function () {
-		const self = this as unknown as AFRAME.Component<LineGraphComponent>
+		const self = this as unknown as AFRAME.Component<LineGraphData>
 
 		self.el.removeObject3D('racing_line')
 	}
 })
+
+
+//	Filled Graph
+
+interface FilledGraphSchema {
+	colour: Schema.Colour
+	coords: Schema.Coords
+	streamed_coords: Schema.String
+	streamed_deltas: Schema.String
+	streamed_index: Schema.Number
+	length: Schema.Number
+	reorientation_quaternion: Schema.Quaternion
+}
+
+interface FilledGraphData extends Schema.ToData<FilledGraphSchema> {
+	fill_geometry: AFRAME.THREE.BufferGeometry
+}
+
+interface FilledGraph {
+	schema: FilledGraphSchema
+}
 
 AFRAME.registerComponent<AFRAME.ComponentDefinition<FilledGraph>>('filled_graph', {
 	schema: {
@@ -541,7 +479,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FilledGraph>>('filled_graph'
 	},
 
 	init: function () {
-		const self = this as unknown as AFRAME.Component<FilledGraphComponent>
+		const self = this as unknown as AFRAME.Component<FilledGraphData>
 
 		//	Materials
 		const fill_material = new AFRAME.THREE.MeshBasicMaterial({
@@ -612,7 +550,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FilledGraph>>('filled_graph'
 	},
 
 	update: function (oldData) {
-		const self = this as unknown as AFRAME.Component<FilledGraphComponent>
+		const self = this as unknown as AFRAME.Component<FilledGraphData>
 
 		if (_.isEmpty(self.data.streamed_coords) === false && _.isEmpty(self.data.streamed_deltas) === false) {
 			const position = self.data.fill_geometry.getAttribute('position')
@@ -753,11 +691,29 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FilledGraph>>('filled_graph'
 	},
 
 	remove: function () {
-		const self = this as unknown as AFRAME.Component<FilledGraphComponent>
+		const self = this as unknown as AFRAME.Component<FilledGraphData>
 
 		self.el.removeObject3D('racing_line')
 	}
 })
+
+
+//	Racing Dots
+
+interface RacingDotsSchema {
+	colour: Schema.Colour
+	coords: Schema.Coords
+	reorientation_quaternion: Schema.Quaternion
+}
+
+interface RacingDotsData extends Schema.ToData<RacingDotsSchema> {
+	racing_dots_geometry: AFRAME.THREE.BufferGeometry
+	racing_dots_material: AFRAME.THREE.PointsMaterial
+}
+
+interface RacingDots {
+	schema: RacingDotsSchema
+}
 
 AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingDots>>('racing_dots', {
 	schema: {
@@ -781,14 +737,14 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingDots>>('racing_dots', 
 	},
 
 	init: function () {
-		const self = this as unknown as AFRAME.Component<RacingDotsComponent>
+		const self = this as unknown as AFRAME.Component<RacingDotsData>
 
 		//	Materials
 		self.data.racing_dots_material = new AFRAME.THREE.PointsMaterial({ color: self.data.colour, size: 4.0, sizeAttenuation: false })
 	},
 
 	update: function (oldData) {
-		const self = this as unknown as AFRAME.Component<RacingDotsComponent>
+		const self = this as unknown as AFRAME.Component<RacingDotsData>
 
 		// const start_finish_points = []
 
@@ -819,11 +775,34 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingDots>>('racing_dots', 
 	},
 
 	remove: function () {
-		const self = this as unknown as AFRAME.Component<RacingDotsComponent>
+		const self = this as unknown as AFRAME.Component<RacingDotsData>
 
 		self.el.removeObject3D('racing_dots')
 	}
 })
+
+
+//	Smoothing Inspector
+
+interface SmoothingInspectorSchema {
+	colour: Schema.Colour
+	coords0: Schema.Coords
+	coords1: Schema.Coords
+	coords2: Schema.Coords
+	coords3: Schema.Coords
+	coords4: Schema.Coords
+	coords5: Schema.Coords
+	reorientation_quaternion: Schema.Quaternion
+}
+
+interface SmoothingInspectorData extends Schema.ToData<SmoothingInspectorSchema> {
+	smoothing_geometry: AFRAME.THREE.BufferGeometry
+	smoothing_material: AFRAME.THREE.LineBasicMaterial
+}
+
+interface SmoothingInspector {
+	schema: SmoothingInspectorSchema
+}
 
 AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smoothing_inspector', {
 	schema: {
@@ -902,7 +881,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 	},
 
 	init: function () {
-		const self = this as unknown as AFRAME.Component<SmoothingInspectorComponent>
+		const self = this as unknown as AFRAME.Component<SmoothingInspectorData>
 
 		//	Materials
 		self.data.smoothing_material = new AFRAME.THREE.LineBasicMaterial({
@@ -912,7 +891,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 	},
 
 	update: function (oldData) {
-		const self = this as unknown as AFRAME.Component<SmoothingInspectorComponent>
+		const self = this as unknown as AFRAME.Component<SmoothingInspectorData>
 
 		// const start_finish_points = []
 
@@ -951,11 +930,12 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 	},
 
 	remove: function () {
-		const self = this as unknown as AFRAME.Component<SmoothingInspectorComponent>
+		const self = this as unknown as AFRAME.Component<SmoothingInspectorData>
 
 		self.el.removeObject3D('smoothing_inspector')
 	}
 })
+
 
 // AFRAME.registerComponent('grabbable', {
 // 	schema: {
@@ -981,5 +961,3 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 // 		}
 // 	}
 // })
-
-export {}

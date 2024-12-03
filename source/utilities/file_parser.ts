@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+import * as AFRAME from 'aframe'
 import * as _ from 'lodash'
 import * as Papa from 'papaparse'
 import * as ecef from 'geodetic-to-ecef'
@@ -206,7 +206,7 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 	//	Iterate on each point in the racing line
 	// data.forEach(function (point, index) {
 	const smooth_by_averages = function (data: Array<RacingLinePoint>, point: RacingLinePoint, index: number, length: number, listener: EventTarget | null, event_name: string | null): Coordinate.Cartesian3D {
-		const averaged_points = new Array<THREE.Vector3>()
+		const averaged_points = new Array<AFRAME.THREE.Vector3>()
 
 		//	Find the point that is the average position of the points
 		//	within the bounding limit around the point in question
@@ -217,7 +217,7 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 			//	between GPS points and the bounding counts that is
 			//	not well understood at the moment.
 			const bound = Math.min(max_bound, index, (data.length - index))
-			const average_point = new THREE.Vector3(0, 0, 0)
+			const average_point = new AFRAME.THREE.Vector3(0, 0, 0)
 
 			if (bound > 0) {
 				const points_to_average = data.slice((index - bound), (index + bound))
@@ -245,14 +245,14 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 
 		//	Convert to Vector3 to use some of the built-in methods
 		averaged_points.forEach(function (averaged_point, averaged_point_i) {
-			averaged_points[averaged_point_i] = new THREE.Vector3(averaged_point.x, averaged_point.y, averaged_point.z)
+			averaged_points[averaged_point_i] = new AFRAME.THREE.Vector3(averaged_point.x, averaged_point.y, averaged_point.z)
 		})
 
 		//	Parse both the unit vectors and distances leading from the
 		//	average point with the largest bounds, to the smallest
 		const most_averaged_point = averaged_points[0].clone()
-		const vectors_to_averaged_points = new Array<THREE.Vector3>()
-		const vectors_between_averaged_points = new Array<THREE.Vector3>()
+		const vectors_to_averaged_points = new Array<AFRAME.THREE.Vector3>()
+		const vectors_between_averaged_points = new Array<AFRAME.THREE.Vector3>()
 		const distances_between_averaged_points = new Array<number>()
 
 		for (let i = 1, l = averaged_points.length; i < l; i++) {
@@ -284,11 +284,11 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 			const distance_to_smoothed_point: number = (distance_rate_of_change_to_average * distances_between_averaged_points_last)
 
 			//	Work out the final vector to the implied 'smoothed' point
-			const vectors_between_averaged_points_last: THREE.Vector3 = (vectors_between_averaged_points[vectors_between_averaged_points.length - 1]) || new THREE.Vector3(0, 0, 0)
-			const vectors_between_averaged_points_second_to_last: THREE.Vector3 = (vectors_between_averaged_points[vectors_between_averaged_points.length - 2]) || new THREE.Vector3(0, 0, 0)
-			const final_vector: THREE.Vector3 = vectors_between_averaged_points_last.clone().normalize()
+			const vectors_between_averaged_points_last: AFRAME.THREE.Vector3 = (vectors_between_averaged_points[vectors_between_averaged_points.length - 1]) || new AFRAME.THREE.Vector3(0, 0, 0)
+			const vectors_between_averaged_points_second_to_last: AFRAME.THREE.Vector3 = (vectors_between_averaged_points[vectors_between_averaged_points.length - 2]) || new AFRAME.THREE.Vector3(0, 0, 0)
+			const final_vector: AFRAME.THREE.Vector3 = vectors_between_averaged_points_last.clone().normalize()
 
-			const rotation_axis_vector = new THREE.Vector3(0, 0, 0)
+			const rotation_axis_vector = new AFRAME.THREE.Vector3(0, 0, 0)
 				.crossVectors(
 					// _.nth(vectors_between_averaged_points, -2),
 					vectors_between_averaged_points_second_to_last,
@@ -309,7 +309,7 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 			//	boundary) and the least averaged point to calculate where
 			//	the new implied 'smoothed' point is located in absolute
 			//	terms.
-			const vectors_to_averaged_points_last: THREE.Vector3 = (vectors_to_averaged_points[vectors_to_averaged_points.length - 1]) || new THREE.Vector3(0, 0, 0)
+			const vectors_to_averaged_points_last: AFRAME.THREE.Vector3 = (vectors_to_averaged_points[vectors_to_averaged_points.length - 1]) || new AFRAME.THREE.Vector3(0, 0, 0)
 			final_vector
 				.multiplyScalar(distance_to_smoothed_point)
 				.add(vectors_to_averaged_points_last)
