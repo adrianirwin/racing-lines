@@ -2,16 +2,50 @@ import { Coordinate } from './Geometry'
 
 export namespace Log {
 	export interface File {
-		lastModified: number
+		last_modified: number
 		name: string
 	}
 
 	// TODO: This name sucks
-	export interface LoadedValues {
+	export interface ParsedValues {
 		bounds_coords: Coordinate.GeographicBounds
-		lap_boundaries: Array<number>
+		lap_first_point_indexes: Array<number>
 		points: Array<RacingLinePoint>
 		vector_to_center: Array<number>
+	}
+
+	export class Session implements File, ParsedValues {
+		bounds_coords: Coordinate.GeographicBounds
+		lap_first_point_indexes: Array<number>
+		last_modified: number
+		name: string
+		points: Array<RacingLinePoint>
+		vector_to_center: Array<number>
+
+		constructor(file: File, parsed_values: ParsedValues) {
+			this.last_modified = file.last_modified
+			this.name = file.name
+
+			this.bounds_coords = parsed_values.bounds_coords
+			this.lap_first_point_indexes = parsed_values.lap_first_point_indexes
+			this.points = parsed_values.points
+			this.vector_to_center = parsed_values.vector_to_center
+		}
+
+		get total_laps(): number {
+			return this.lap_first_point_indexes.length
+		}
+
+		//	1-based convenience method to get the points for a lap
+		points_for_lap(lap_number: number): Array<RacingLinePoint> | null {
+			if (lap_number > 0 && lap_number <= this.lap_first_point_indexes.length) {
+				return this.points.slice(
+					this.lap_first_point_indexes[lap_number - 1],
+					this.lap_first_point_indexes[lap_number],
+				)
+			}
+			return null
+		}
 	}
 }
 

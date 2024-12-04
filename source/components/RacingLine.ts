@@ -10,7 +10,7 @@ interface RacingLineSchema {
 	coords: Schema.Coords
 	streamed_coords: Schema.String
 	streamed_index: Schema.Number
-	lap_boundaries: Schema.ArrayNumber
+	lap_first_point_indexes: Schema.ArrayNumber
 	lap_offset_length: Schema.Number
 	length: Schema.Number
 	reorientation_quaternion: Schema.Quaternion
@@ -50,7 +50,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingLine>>('racing_line', 
 		streamed_index: {
 			type: 'number', default: 0,
 		},
-		lap_boundaries: {
+		lap_first_point_indexes: {
 			type: 'array', default: [0],
 		},
 		lap_offset_length: {

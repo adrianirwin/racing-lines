@@ -34,12 +34,13 @@ const workers = {
 
 //	Global State
 const vr_ui_elements = new Array<HTMLElement>()
-const uploaded_files = <State.Files>{}
+const uploaded_sessions = <State.Sessions>{}
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback: () => void, callback_vr_enter: () => void, callback_vr_exit: () => void): void {
 	window.console.log('start_aframe')
 
+	// $('body').append('<a-scene stats background="color: #353638">')
 	$('body').append('<a-scene background="color: #353638">')
 	$('a-scene').on('loaded', callback)
 
@@ -66,13 +67,14 @@ function allow_file_upload(): void {
 	file_loader.add_listener(workers.log_file_parser, file_uploader, file_finished_loading)
 }
 
-function file_finished_loading(values: Log.File & Log.LoadedValues): void {
+function file_finished_loading(session: Log.Session): void {
 	window.console.log('file_finished_loading')
 
 	//	Store in the global state
-	uploaded_files[values.name] = values
+	// TODO: For now...
+	uploaded_sessions[session.name] = session
 
-	render_racing_line(uploaded_files[values.name])
+	render_racing_line(uploaded_sessions[session.name])
 	allow_file_upload()
 }
 
@@ -140,21 +142,21 @@ function start_vr_scene(): void {
 	// })
 }
 
-function render_racing_line(values: Log.LoadedValues): void {
+function render_racing_line(values: Log.ParsedValues): void {
 	window.console.log('render_racing_line')
 
 	const racing_line_points = values.points
 	const bounds_coords = values.bounds_coords
 	const vector_to_center = values.vector_to_center
-	const lap_boundaries = values.lap_boundaries
+	const lap_first_point_indexes = values.lap_first_point_indexes
 
 	//	TODO: Set dynamically/allow user input?
 	const scaling_factor =			0.01
 
 	//	Trim the data to speed up development
-	const first_lap =				racing_line_points.slice(0, lap_boundaries[0])
-	const first_lap_test =			racing_line_points.slice(0, lap_boundaries[0])
-	const second_lap_test =			racing_line_points.slice(lap_boundaries[1], lap_boundaries[2])
+	const first_lap =				racing_line_points.slice(0, lap_first_point_indexes[0])
+	const first_lap_test =			racing_line_points.slice(0, lap_first_point_indexes[0])
+	const second_lap_test =			racing_line_points.slice(lap_first_point_indexes[1], lap_first_point_indexes[2])
 
 	//	Three significant vectors
 	//	 - to the center of the track bounds in earth space

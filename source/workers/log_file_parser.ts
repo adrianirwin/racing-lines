@@ -1,6 +1,7 @@
 import get from 'lodash/get'
 import isNaN from 'lodash/isNaN'
 import isNull from 'lodash/isNull'
+import isUndefined from 'lodash/isUndefined'
 import set from 'lodash/set'
 import * as ecef from 'geodetic-to-ecef'
 import * as Papa from 'papaparse'
@@ -19,7 +20,9 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		const parsed: Papa.ParseResult<Array<number>> = Papa.parse(self.atob(csv.split(',')[1]).replace(/"/g, ''), { delimiter: ',', dynamicTyping: true, header: false })
 
 		const racing_line_points = new Array<RacingLinePoint>()
-		const lap_boundaries = new Array<number>()
+		const lap_first_point_indexes = new Array<number>()
+		lap_first_point_indexes.push(0)
+
 		const bounds_coords: Coordinate.GeographicBounds = {
 			latitude_northmost: NaN,
 			latitude_southmost: NaN,
@@ -28,7 +31,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		}
 
 		let gps_index = 0
-		let most_recent_lap = 0
+		let previous_lap_number = 0
 		let previous_point: RacingLinePoint | null = null
 
 		//	TODO: Move out of here - add an alternate command to include this
@@ -40,7 +43,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 			const latitude = row[get(device_profile, 'log_indicies.gps.latitude')]
 			const longitude = row[get(device_profile, 'log_indicies.gps.longitude')]
 
-			const current_lap = row[get(device_profile, 'log_indicies.performance.current_lap')]
+			const current_lap_number = row[get(device_profile, 'log_indicies.performance.current_lap')]
 
 			//	Skip header row and rows without GPS coords
 			//	TODO: Don't skip the non-GPS rows?
@@ -48,6 +51,8 @@ self.addEventListener('message', (event: MessageEvent): void => {
 				index > 0
 				&& isNull(latitude) === false
 				&& isNull(longitude) === false
+				&& isUndefined(longitude) === false
+				&& isUndefined(longitude) === false
 			) {
 
 				//	Populate new data point
@@ -109,10 +114,10 @@ self.addEventListener('message', (event: MessageEvent): void => {
 					bounds_coords.longitude_eastmost = longitude
 				}
 
-				// TODO: What does this even do?
-				if (most_recent_lap !== current_lap) {
-					most_recent_lap = current_lap
-					lap_boundaries.push(gps_index)
+				//	Increment the lap counter
+				if (previous_lap_number !== current_lap_number) {
+					previous_lap_number = current_lap_number
+					lap_first_point_indexes.push(gps_index)
 				}
 
 				gps_index++
@@ -166,13 +171,13 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		})
 
 		//	Remove the '0' boundary
-		lap_boundaries.splice(0, 1)
+		lap_first_point_indexes.splice(0, 1)
 
 		self.postMessage(JSON.stringify({
 			command:			WebWorker.Task.LogFileMetadataParsed,
 			bounds_coords,
 			vector_to_center,
-			lap_boundaries,
+			lap_first_point_indexes,
 		}))
 
 		let loop_index = 0

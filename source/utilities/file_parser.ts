@@ -101,7 +101,7 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // function laps(data, device_profile): any {
 // 	window.console.log('parser.laps')
 
-// 	const lap_boundaries = []
+// 	const lap_first_point_indexes = []
 // 	let current_lap = null
 // 	let gps_index = 0
 // 	data.forEach(function (row, index) {
@@ -113,16 +113,16 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 		) {
 // 			if (current_lap !== get(row, 'performance.current_lap')) {
 // 				current_lap = get(row, 'performance.current_lap')
-// 				lap_boundaries.push(gps_index)
+// 				lap_first_point_indexes.push(gps_index)
 // 			}
 // 			gps_index++
 // 		}
 // 	})
 
 // 	//	Remove the '0' boundary
-// 	lap_boundaries.splice(0, 1)
+// 	lap_first_point_indexes.splice(0, 1)
 
-// 	return lap_boundaries
+// 	return lap_first_point_indexes
 // }
 
 //	Determine the outer bounds of the data in lat/long
