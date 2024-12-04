@@ -11,7 +11,12 @@ import * as file_loader from './utilities/file_loader'
 import * as util_graphing from './utilities/graphing'
 
 //	Custom A-Frame Components
-import './aframe/components'
+import './components/FilledGraph'
+import './components/GroundPlane'
+import './components/LineGraph'
+import './components/RacingDots'
+import './components/RacingLine'
+import './components/SmoothingInspector'
 
 //	Styles
 import './styles/main.scss'
