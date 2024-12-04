@@ -28,6 +28,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 			self.postMessage(JSON.stringify({
 				command:			WebWorker.Task.Terminate,
 			}))
+			self.close()
 			break
 
 		case WebWorker.Task.GraphPointsBatch:

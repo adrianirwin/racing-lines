@@ -27,9 +27,9 @@ import './styles/main.scss'
 //	Web Workers
 // TODO: Create and tear-down as needed, instead of re-using
 const workers = {
-	grapher: new Worker(new URL('./workers/grapher.js', import.meta.url)),
-	log_file_parser: new Worker(new URL('./workers/log_file_parser.js', import.meta.url)),
-	smoother: new Worker(new URL('./workers/smoother.js', import.meta.url)),
+	grapher:			'./workers/grapher.js',
+	log_file_parser:	'./workers/log_file_parser.js',
+	smoother:			'./workers/smoother.js',
 }
 
 //	Global State
@@ -64,7 +64,7 @@ function allow_file_upload(): void {
 	window.console.log('allow_file_upload')
 
 	const file_uploader = document.getElementById('file_upload') as HTMLInputElement
-	file_loader.add_listener(workers.log_file_parser, file_uploader, file_finished_loading)
+	file_loader.add_listener(new Worker(new URL(workers.log_file_parser, import.meta.url)), file_uploader, file_finished_loading)
 }
 
 function file_finished_loading(session: Log.Session): void {
@@ -142,21 +142,19 @@ function start_vr_scene(): void {
 	// })
 }
 
-function render_racing_line(values: Log.ParsedValues): void {
+function render_racing_line(session: Log.Session): void {
 	window.console.log('render_racing_line')
 
-	const racing_line_points = values.points
-	const bounds_coords = values.bounds_coords
-	const vector_to_center = values.vector_to_center
-	const lap_first_point_indexes = values.lap_first_point_indexes
+	const racing_line_points = session.points
+	const bounds_coords = session.bounds_coords
+	const vector_to_center = session.vector_to_center
+	const lap_first_point_indexes = session.lap_first_point_indexes
 
 	//	TODO: Set dynamically/allow user input?
 	const scaling_factor =			0.01
 
 	//	Trim the data to speed up development
-	const first_lap =				racing_line_points.slice(0, lap_first_point_indexes[0])
-	const first_lap_test =			racing_line_points.slice(0, lap_first_point_indexes[0])
-	const second_lap_test =			racing_line_points.slice(lap_first_point_indexes[1], lap_first_point_indexes[2])
+	const test_lap = session.points_for_lap(3)
 
 	//	Three significant vectors
 	//	 - to the center of the track bounds in earth space
@@ -198,12 +196,12 @@ function render_racing_line(values: Log.ParsedValues): void {
 	//	Assign the racing line component to the raw and smoother line entities
 	raw_line.setAttribute('racing_line', {
 		coords: '',
-		length: second_lap_test.length,
-		// length: racing_line_points.length,
+		length: test_lap.length,
 		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion),
 	})
 
 	//	Draw raw GPS racing line
+	const grapher = new Worker(new URL(workers.grapher, import.meta.url))
 	let coords: Array<string> | null = null
 	let parsed_message: {
 		command: string,
@@ -224,30 +222,27 @@ function render_racing_line(values: Log.ParsedValues): void {
 				coords = null
 				parsed_message = null
 
-				workers.grapher.removeEventListener('message', grapher_message)
+				grapher.removeEventListener('message', grapher_message)
 
 				//	TODO: Should probably wrap this all up in a big fat promise
-				render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion)
-				// render_smoothed_line(racing_line_points, v3_to_center, reorientation_quaternion)
+				render_smoothed_line(test_lap, v3_to_center, reorientation_quaternion)
 				break
 		}
 	}
-	workers.grapher.addEventListener('message', grapher_message)
+	grapher.addEventListener('message', grapher_message)
 
 	//	Iteratively feed in the raw coordinates to the graphing worker
 	let loop_index = 0
 	const loop_size = 200
-	const loop_limit = second_lap_test.length
-	// const loop_limit = racing_line_points.length
+	const loop_limit = test_lap.length
 
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
-			workers.grapher.postMessage(JSON.stringify({
+			grapher.postMessage(JSON.stringify({
 				command:			WebWorker.Task.GraphPointsBatch,
 				index:				(loop_index * loop_size),
 				path_floor:			'coordinates.cartesian.raw',
-				points:				second_lap_test.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
-				// points:				racing_line_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
+				points:				test_lap.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
 				steps:				loop_size,
 				value_function:		util_graphing.line.name,
 			}))
@@ -255,7 +250,7 @@ function render_racing_line(values: Log.ParsedValues): void {
 		}
 		else {
 			window.clearInterval(interval_id)
-			workers.grapher.postMessage(JSON.stringify({
+			grapher.postMessage(JSON.stringify({
 				command:			WebWorker.Task.GraphPointsFinished,
 			}))
 		}
@@ -279,6 +274,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 	})
 
 	//	Run smoothing algorithm on current lap
+	const smoother = new Worker(new URL(workers.smoother, import.meta.url))
 	let index = 0
 	let smoothed_coords: Array<string> | null = null
 	let parsed_message: {
@@ -305,14 +301,14 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 				smoothed_coords = null
 				parsed_message = null
 
-				workers.smoother.removeEventListener('message', smoother_message)
+				smoother.removeEventListener('message', smoother_message)
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_graphs(lap_points, up_vector, reorientation_quaternion)
 				break
 		}
 	}
-	workers.smoother.addEventListener('message', smoother_message)
+	smoother.addEventListener('message', smoother_message)
 
 	//	Iteratively feed in the points to the smoothing worker
 	let loop_index = 0
@@ -321,7 +317,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
-			workers.smoother.postMessage(JSON.stringify({
+			smoother.postMessage(JSON.stringify({
 				command:			WebWorker.Task.SmoothPointsBatch,
 				bounds:				[320, 160, 80, 40, 20],
 				index:				(loop_index * loop_size),
@@ -334,7 +330,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 		}
 		else {
 			window.clearInterval(interval_id)
-			workers.smoother.postMessage(JSON.stringify({
+			smoother.postMessage(JSON.stringify({
 				command:			WebWorker.Task.SmoothPointsFinished,
 			}))
 		}
@@ -363,6 +359,7 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 	})
 
 	//	Draw speed graph
+	const grapher = new Worker(new URL(workers.grapher, import.meta.url))
 	let value_points = null
 	let floor_points = null
 	let delta_points = null
@@ -406,11 +403,11 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 
 				parsed_message = undefined
 
-				workers.grapher.removeEventListener('message', grapher_message)
+				grapher.removeEventListener('message', grapher_message)
 				break
 		}
 	}
-	workers.grapher.addEventListener('message', grapher_message)
+	grapher.addEventListener('message', grapher_message)
 
 	//	Iteratively feed in the smoothed points and performance data to the graphing worker
 	let loop_index = 0
@@ -419,7 +416,7 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
-			workers.grapher.postMessage(JSON.stringify({
+			grapher.postMessage(JSON.stringify({
 				command:				WebWorker.Task.GraphPointsBatch,
 				index:					(loop_index * loop_size),
 				path_delta:				'delta.speed',
@@ -435,7 +432,7 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 		}
 		else {
 			window.clearInterval(interval_id)
-			workers.grapher.postMessage(JSON.stringify({
+			grapher.postMessage(JSON.stringify({
 				command:			WebWorker.Task.GraphPointsFinished,
 			}))
 		}

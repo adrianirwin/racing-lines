@@ -37,14 +37,14 @@ export namespace Log {
 		}
 
 		//	1-based convenience method to get the points for a lap
-		points_for_lap(lap_number: number): Array<RacingLinePoint> | null {
+		points_for_lap(lap_number: number): Array<RacingLinePoint> {
 			if (lap_number > 0 && lap_number <= this.lap_first_point_indexes.length) {
 				return this.points.slice(
 					this.lap_first_point_indexes[lap_number - 1],
 					this.lap_first_point_indexes[lap_number],
 				)
 			}
-			return null
+			return new Array<RacingLinePoint>()
 		}
 	}
 }
