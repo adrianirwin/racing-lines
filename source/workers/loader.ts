@@ -4,11 +4,9 @@ import isNull from 'lodash/isNull'
 import set from 'lodash/set'
 import * as ecef from 'geodetic-to-ecef'
 import * as Papa from 'papaparse'
-import {
-	Coordinate,
-	RacingLinePoint,
-	WorkerTask,
-} from './../models/racing_lines'
+import { Coordinate } from './../models/Geometry'
+import { RacingLinePoint } from './../models/Logs'
+import { WebWorker } from './../models/Workers'
 import * as devices from './../utilities/devices'
 
 self.addEventListener('message', (event: MessageEvent): void => {
@@ -171,7 +169,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		lap_boundaries.splice(0, 1)
 
 		self.postMessage(JSON.stringify({
-			command:			WorkerTask.MetadataLoaded,
+			command:			WebWorker.Task.MetadataLoaded,
 			bounds_coords,
 			vector_to_center,
 			lap_boundaries,
@@ -184,7 +182,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		const interval_id = self.setInterval((): void => {
 			if ((loop_index * loop_size) < loop_limit) {
 				self.postMessage(JSON.stringify({
-					command:			WorkerTask.PointsLoaded,
+					command:			WebWorker.Task.PointsLoaded,
 					points:				racing_line_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
 				}))
 				loop_index++
@@ -193,7 +191,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 				//	Clean up listeners in the main thread and stop the loop
 				self.clearInterval(interval_id)
 				self.postMessage(JSON.stringify({
-					command:			WorkerTask.Terminate,
+					command:			WebWorker.Task.Terminate,
 				}))
 			}
 		}, 1)

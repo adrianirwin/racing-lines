@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import assign from 'lodash/assign'
 import isUndefined from 'lodash/isUndefined'
-import { Coordinate } from './../models/racing_lines'
+import { Coordinate } from './../models/Geometry'
 
 //	Simple line graph, renders the points as provided
 export function line(floor_points: any, values: any, deltas: any, index: any, scale: any, steps: any, offset_vector_coords: any): Array<Coordinate.Cartesian3D> {

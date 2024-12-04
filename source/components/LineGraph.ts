@@ -2,10 +2,8 @@ import * as AFRAME from 'aframe'
 import forEach from 'lodash/forEach'
 import isEmpty from 'lodash/isEmpty'
 import isString from 'lodash/isString'
-import {
-	Coordinate,
-	Schema,
-} from './../models/racing_lines'
+import { Coordinate } from './../models/Geometry'
+import { Schema } from './../models/Components'
 
 interface LineGraphSchema {
 	colour: Schema.Colour

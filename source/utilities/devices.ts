@@ -8,7 +8,7 @@ import set from 'lodash/set'
 import {
 	Device,
 	RacingLinePoint,
-} from './../models/racing_lines'
+} from './../models/Logs'
 
 //	Convenience method to assign log indicies to the device profile
 function assign_indicies(device_profiles: Device.Profiles, device_name: string, indicies: { [key: string]: number }): void {

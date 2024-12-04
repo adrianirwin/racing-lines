@@ -1,9 +1,9 @@
+import { Coordinate } from './../models/Geometry'
 import {
-	Coordinate,
 	LoadedValues,
 	RacingLinePoint,
-	WorkerTask,
-} from './../models/racing_lines'
+} from './../models/Logs'
+import { WebWorker } from './../models/Workers'
 
 //	Parse the CSV file into:
 //	- Object of points with performance and GPS data
@@ -32,17 +32,17 @@ function parse_file(worker: Worker, files: FileList | null, callback: (values: L
 			parsed_message = JSON.parse(event.data) as (LoadedValues & { command: string })
 
 			switch (parsed_message.command) {
-				case WorkerTask.MetadataLoaded:
+				case WebWorker.Task.MetadataLoaded:
 					values.bounds_coords = parsed_message.bounds_coords
 					values.vector_to_center = parsed_message.vector_to_center
 					values.lap_boundaries = parsed_message.lap_boundaries
 					break
 
-				case WorkerTask.PointsLoaded:
+				case WebWorker.Task.PointsLoaded:
 					values.points = values.points.concat(parsed_message.points)
 					break
 
-				case WorkerTask.Terminate:
+				case WebWorker.Task.Terminate:
 					parsed_message = null
 
 					resolve(values)

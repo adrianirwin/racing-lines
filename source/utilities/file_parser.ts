@@ -9,11 +9,8 @@ import set from 'lodash/set'
 import * as Papa from 'papaparse'
 import * as ecef from 'geodetic-to-ecef'
 import * as devices from './../utilities/devices'
-
-import {
-	Coordinate,
-	RacingLinePoint,
-} from './../models/racing_lines'
+import { Coordinate } from './../models/Geometry'
+import { RacingLinePoint } from './../models/Logs'
 
 //	Parser settings
 function from_csv(csv: string): any {

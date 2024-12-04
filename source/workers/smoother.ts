@@ -3,11 +3,9 @@ import get from 'lodash/get'
 import isUndefined from 'lodash/isUndefined'
 import last from 'lodash/last'
 import nth from 'lodash/nth'
-import {
-	Coordinate,
-	RacingLinePoint,
-	WorkerTask,
-} from './../models/racing_lines'
+import { Coordinate } from './../models/Geometry'
+import { RacingLinePoint } from './../models/Logs'
+import { WebWorker } from './../models/Workers'
 
 self.addEventListener('message', (event: MessageEvent): void => {
 	const message: {
@@ -21,15 +19,15 @@ self.addEventListener('message', (event: MessageEvent): void => {
 	} = JSON.parse(event.data)
 
 	switch (message.command) {
-		case  WorkerTask.SmoothPointsFinished:
+		case  WebWorker.Task.SmoothPointsFinished:
 			self.postMessage(JSON.stringify({
-				command:			WorkerTask.Terminate,
+				command:			WebWorker.Task.Terminate,
 			}))
 			break
 
-		case WorkerTask.SmoothPointsBatch:
+		case WebWorker.Task.SmoothPointsBatch:
 			self.postMessage(JSON.stringify({
-				command:		WorkerTask.PointsSmoothed,
+				command:		WebWorker.Task.PointsSmoothed,
 				points:			smooth_by_averages(
 									message.points,
 									// cloned_points,

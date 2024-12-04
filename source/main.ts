@@ -2,12 +2,12 @@ import * as AFRAME from 'aframe'
 import get from 'lodash/get'
 import isNull from 'lodash/isNull'
 import set from 'lodash/set'
+import { Coordinate } from './models/Geometry'
 import {
-	Coordinate,
 	LoadedValues,
 	RacingLinePoint,
-	WorkerTask,
-} from './models/racing_lines'
+} from './models/Logs'
+import { WebWorker } from './models/Workers'
 import * as file_parser from './utilities/file_parser'
 import * as file_loader from './utilities/file_loader'
 import * as util_graphing from './utilities/graphing'
@@ -191,6 +191,7 @@ function render_racing_line(values: LoadedValues): void {
 	raw_line.setAttribute('racing_line', {
 		coords: '',
 		length: second_lap_test.length,
+		// length: racing_line_points.length,
 		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion),
 	})
 
@@ -205,13 +206,13 @@ function render_racing_line(values: LoadedValues): void {
 		parsed_message = JSON.parse(event.data)
 
 		switch (parsed_message?.command) {
-			case WorkerTask.PointsGraphed:
+			case WebWorker.Task.PointsGraphed:
 				coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
 
 				raw_line.setAttribute('racing_line',  { streamed_coords: coords.join(', '), streamed_index: parsed_message.index })
 				break
 
-			case WorkerTask.Terminate:
+			case WebWorker.Task.Terminate:
 				coords = null
 				parsed_message = null
 
@@ -219,6 +220,7 @@ function render_racing_line(values: LoadedValues): void {
 
 				//	TODO: Should probably wrap this all up in a big fat promise
 				render_smoothed_line(second_lap_test, v3_to_center, reorientation_quaternion)
+				// render_smoothed_line(racing_line_points, v3_to_center, reorientation_quaternion)
 				break
 		}
 	}
@@ -228,14 +230,16 @@ function render_racing_line(values: LoadedValues): void {
 	let loop_index = 0
 	const loop_size = 200
 	const loop_limit = second_lap_test.length
+	// const loop_limit = racing_line_points.length
 
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
 			workers.grapher.postMessage(JSON.stringify({
-				command:			WorkerTask.GraphPointsBatch,
+				command:			WebWorker.Task.GraphPointsBatch,
 				index:				(loop_index * loop_size),
 				path_floor:			'coordinates.cartesian.raw',
 				points:				second_lap_test.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
+				// points:				racing_line_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
 				steps:				loop_size,
 				value_function:		util_graphing.line.name,
 			}))
@@ -244,7 +248,7 @@ function render_racing_line(values: LoadedValues): void {
 		else {
 			window.clearInterval(interval_id)
 			workers.grapher.postMessage(JSON.stringify({
-				command:			WorkerTask.GraphPointsFinished,
+				command:			WebWorker.Task.GraphPointsFinished,
 			}))
 		}
 	}, 1)
@@ -278,7 +282,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 		parsed_message = JSON.parse(event.data)
 
 		switch (parsed_message?.command) {
-			case WorkerTask.PointsSmoothed:
+			case WebWorker.Task.PointsSmoothed:
 				smoothed_coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
 
 				smoothed_line.setAttribute('racing_line', { streamed_coords: smoothed_coords.join(', '), streamed_index: parsed_message.index })
@@ -289,7 +293,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 				}
 				break
 
-			case WorkerTask.Terminate:
+			case WebWorker.Task.Terminate:
 				smoothed_coords = null
 				parsed_message = null
 
@@ -310,7 +314,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
 			workers.smoother.postMessage(JSON.stringify({
-				command:			WorkerTask.SmoothPointsBatch,
+				command:			WebWorker.Task.SmoothPointsBatch,
 				bounds:				[320, 160, 80, 40, 20],
 				index:				(loop_index * loop_size),
 				points:				lap_points.slice(Math.max(((loop_index * loop_size) - 320), 0), (((loop_index + 1) * loop_size) + 320)),
@@ -323,7 +327,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 		else {
 			window.clearInterval(interval_id)
 			workers.smoother.postMessage(JSON.stringify({
-				command:			WorkerTask.SmoothPointsFinished,
+				command:			WebWorker.Task.SmoothPointsFinished,
 			}))
 		}
 	}, 1)
@@ -366,7 +370,7 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 		parsed_message = JSON.parse(event.data)
 
 		switch (parsed_message?.command) {
-			case WorkerTask.PointsGraphed:
+			case WebWorker.Task.PointsGraphed:
 				//	"Grow" the graphed line
 				value_points = parsed_message.points.values
 				floor_points = parsed_message.points.floors
@@ -386,7 +390,7 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 				graphed_line.setAttribute('line_graph', { streamed_coords: line_coords.join(', '), streamed_index: parsed_message.index })
 				break
 
-			case WorkerTask.Terminate:
+			case WebWorker.Task.Terminate:
 				value_points = undefined
 				floor_points = undefined
 				filled_coords = undefined
@@ -408,7 +412,7 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
 			workers.grapher.postMessage(JSON.stringify({
-				command:				WorkerTask.GraphPointsBatch,
+				command:				WebWorker.Task.GraphPointsBatch,
 				index:					(loop_index * loop_size),
 				path_delta:				'delta.speed',
 				path_floor:				'coordinates.cartesian.smoothed',
@@ -424,7 +428,7 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 		else {
 			window.clearInterval(interval_id)
 			workers.grapher.postMessage(JSON.stringify({
-				command:			WorkerTask.GraphPointsFinished,
+				command:			WebWorker.Task.GraphPointsFinished,
 			}))
 		}
 	}, 1)

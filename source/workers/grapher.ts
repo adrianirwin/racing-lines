@@ -1,11 +1,9 @@
 import get from 'lodash/get'
 import isString from 'lodash/isString'
 import map from 'lodash/map'
-import {
-	Coordinate,
-	RacingLinePoint,
-	WorkerTask,
-} from './../models/racing_lines'
+import { Coordinate } from './../models/Geometry'
+import { RacingLinePoint } from './../models/Logs'
+import { WebWorker } from './../models/Workers'
 import * as util_graphing from './../utilities/graphing'
 
 self.addEventListener('message', (event: MessageEvent): void => {
@@ -26,15 +24,15 @@ self.addEventListener('message', (event: MessageEvent): void => {
 	const value_function = util_graphing[message.value_function] // as (floor_points: any, values: any, deltas: any, index: any, scale: any, steps: any, offset_vector_coords: any) => Array<Coordinate.Cartesian3D>
 
 	switch (message.command) {
-		case WorkerTask.GraphPointsFinished:
+		case WebWorker.Task.GraphPointsFinished:
 			self.postMessage(JSON.stringify({
-				command:			WorkerTask.Terminate,
+				command:			WebWorker.Task.Terminate,
 			}))
 			break
 
-		case WorkerTask.GraphPointsBatch:
+		case WebWorker.Task.GraphPointsBatch:
 			self.postMessage(JSON.stringify({
-				command:		WorkerTask.PointsGraphed,
+				command:		WebWorker.Task.PointsGraphed,
 				points:			value_function(
 									map(message.points, message.path_floor),
 									map(message.points, message.path_value || ''),
