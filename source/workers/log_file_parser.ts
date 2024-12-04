@@ -169,7 +169,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		lap_boundaries.splice(0, 1)
 
 		self.postMessage(JSON.stringify({
-			command:			WebWorker.Task.MetadataLoaded,
+			command:			WebWorker.Task.LogFileMetadataParsed,
 			bounds_coords,
 			vector_to_center,
 			lap_boundaries,
@@ -182,7 +182,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		const interval_id = self.setInterval((): void => {
 			if ((loop_index * loop_size) < loop_limit) {
 				self.postMessage(JSON.stringify({
-					command:			WebWorker.Task.PointsLoaded,
+					command:			WebWorker.Task.LogFilePointsParsed,
 					points:				racing_line_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
 				}))
 				loop_index++

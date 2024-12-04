@@ -28,7 +28,7 @@ import './styles/main.scss'
 // TODO: Create and tear-down as needed, instead of re-using
 const workers = {
 	grapher: new Worker(new URL('./workers/grapher.js', import.meta.url)),
-	loader: new Worker(new URL('./workers/loader.js', import.meta.url)),
+	log_file_parser: new Worker(new URL('./workers/log_file_parser.js', import.meta.url)),
 	smoother: new Worker(new URL('./workers/smoother.js', import.meta.url)),
 }
 
@@ -63,7 +63,7 @@ function allow_file_upload(): void {
 	window.console.log('allow_file_upload')
 
 	const file_uploader = document.getElementById('file_upload') as HTMLInputElement
-	file_loader.add_listener(workers.loader, file_uploader, file_finished_loading)
+	file_loader.add_listener(workers.log_file_parser, file_uploader, file_finished_loading)
 }
 
 function file_finished_loading(values: Log.File & Log.LoadedValues): void {

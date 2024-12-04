@@ -33,17 +33,17 @@ function parse_file(worker: Worker, files: FileList | null, callback: (values: L
 		}
 
 		let parsed_message: (Log.LoadedValues & { command: string }) | null = null
-		let loader_message = function (event: MessageEvent): void {
+		const worker_message_callback = (event: MessageEvent): void => {
 			parsed_message = JSON.parse(event.data) as (Log.LoadedValues & { command: string })
 
 			switch (parsed_message.command) {
-				case WebWorker.Task.MetadataLoaded:
+				case WebWorker.Task.LogFileMetadataParsed:
 					values.bounds_coords = parsed_message.bounds_coords
 					values.vector_to_center = parsed_message.vector_to_center
 					values.lap_boundaries = parsed_message.lap_boundaries
 					break
 
-				case WebWorker.Task.PointsLoaded:
+				case WebWorker.Task.LogFilePointsParsed:
 					values.points = values.points.concat(parsed_message.points)
 					break
 
@@ -54,12 +54,12 @@ function parse_file(worker: Worker, files: FileList | null, callback: (values: L
 						...file,
 						...values,
 					})
-					worker.removeEventListener('message', loader_message)
+					worker.removeEventListener('message', worker_message_callback)
 					break
 			}
 		}
 
-		worker.addEventListener('message', loader_message)
+		worker.addEventListener('message', worker_message_callback)
 		worker.postMessage(files)
 
 	}).then((values: Log.File & Log.LoadedValues): void => {
