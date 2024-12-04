@@ -147,5 +147,3 @@ export namespace Schema {
 		[PropertyKey in keyof T]: ToDataTypeMapping<T[PropertyKey]>
 	}
 }
-
-
