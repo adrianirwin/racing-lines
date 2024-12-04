@@ -1,5 +1,11 @@
 import * as AFRAME from 'aframe'
-import * as _ from 'lodash'
+import get from 'lodash/get'
+import isNaN from 'lodash/isNaN'
+import isNull from 'lodash/isNull'
+import isUndefined from 'lodash/isUndefined'
+import last from 'lodash/last'
+import nth from 'lodash/nth'
+import set from 'lodash/set'
 import * as Papa from 'papaparse'
 import * as ecef from 'geodetic-to-ecef'
 import * as devices from './../utilities/devices'
@@ -30,14 +36,14 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 	data.forEach(function (row, index) {
 		//	TODO: Interpolation, or does smoothing already cover that??
 
-		latitude = row[_.get(device_profile, 'log_indicies.gps.latitude')]
-		longitude = row[_.get(device_profile, 'log_indicies.gps.longitude')]
+		latitude = row[get(device_profile, 'log_indicies.gps.latitude')]
+		longitude = row[get(device_profile, 'log_indicies.gps.longitude')]
 
 		//	Skip header row and rows without GPS coords
 		if (
 			index > 0
-			&& _.isNull(latitude) === false
-			&& _.isNull(longitude) === false
+			&& isNull(latitude) === false
+			&& isNull(longitude) === false
 		) {
 			// TODO: Hack
 			const temp: any = {}
@@ -81,12 +87,12 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 		//	Skip header row and rows without GPS coords
 // 		if (
 // 			index > 0
-// 			&& _.isNull(row[_.get(device_profile, 'log_indicies.gps.latitude')]) === false
-// 			&& _.isNull(row[_.get(device_profile, 'log_indicies.gps.longitude')]) === false
+// 			&& isNull(row[get(device_profile, 'log_indicies.gps.latitude')]) === false
+// 			&& isNull(row[get(device_profile, 'log_indicies.gps.longitude')]) === false
 // 		) {
 // 			gps_coords.push({
-// 				lat: row[_.get(device_profile, 'log_indicies.gps.latitude')],
-// 				long: row[_.get(device_profile, 'log_indicies.gps.longitude')]
+// 				lat: row[get(device_profile, 'log_indicies.gps.latitude')],
+// 				long: row[get(device_profile, 'log_indicies.gps.longitude')]
 // 			})
 // 		}
 // 	})
@@ -105,11 +111,11 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 		//	Skip header row and rows without GPS coords
 // 		if (
 // 			index > 0
-// 			&& _.isNull(_.get(row, 'coordinates.gps.latitude')) === false
-// 			&& _.isNull(_.get(row, 'coordinates.gps.longitude')) === false
+// 			&& isNull(get(row, 'coordinates.gps.latitude')) === false
+// 			&& isNull(get(row, 'coordinates.gps.longitude')) === false
 // 		) {
-// 			if (current_lap !== _.get(row, 'performance.current_lap')) {
-// 				current_lap = _.get(row, 'performance.current_lap')
+// 			if (current_lap !== get(row, 'performance.current_lap')) {
+// 				current_lap = get(row, 'performance.current_lap')
 // 				lap_boundaries.push(gps_index)
 // 			}
 // 			gps_index++
@@ -134,22 +140,22 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 		'longitude_eastmost': null
 // 	}
 // 	data.forEach(function (row, index) {
-// 		const latitude = _.get(row, 'coordinates.gps.latitude')
-// 		const longitude = _.get(row, 'coordinates.gps.longitude')
+// 		const latitude = get(row, 'coordinates.gps.latitude')
+// 		const longitude = get(row, 'coordinates.gps.longitude')
 
-// 		if (_.isNull(bounds_coords.latitude_northmost) === true || latitude > bounds_coords.latitude_northmost) {
+// 		if (isNull(bounds_coords.latitude_northmost) === true || latitude > bounds_coords.latitude_northmost) {
 // 			bounds_coords.latitude_northmost = latitude
 // 		}
 
-// 		if (_.isNull(bounds_coords.latitude_southmost) === true || latitude < bounds_coords.latitude_southmost) {
+// 		if (isNull(bounds_coords.latitude_southmost) === true || latitude < bounds_coords.latitude_southmost) {
 // 			bounds_coords.latitude_southmost = latitude
 // 		}
 
-// 		if (_.isNull(bounds_coords.longitude_westmost) === true || longitude > bounds_coords.longitude_westmost) {
+// 		if (isNull(bounds_coords.longitude_westmost) === true || longitude > bounds_coords.longitude_westmost) {
 // 			bounds_coords.longitude_westmost = longitude
 // 		}
 
-// 		if (_.isNull(bounds_coords.longitude_eastmost) === true || longitude < bounds_coords.longitude_eastmost) {
+// 		if (isNull(bounds_coords.longitude_eastmost) === true || longitude < bounds_coords.longitude_eastmost) {
 // 			bounds_coords.longitude_eastmost = longitude
 // 		}
 // 	})
@@ -162,13 +168,13 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 	window.console.log('parser.cartesian')
 
 // 	data.forEach(function (point, index) {
-// 		const cartesian_point = ecef(_.get(point, 'coordinates.gps.latitude'), _.get(point, 'coordinates.gps.longitude'))
+// 		const cartesian_point = ecef(get(point, 'coordinates.gps.latitude'), get(point, 'coordinates.gps.longitude'))
 // 		if (
-// 			_.isNaN(cartesian_point[0]) === false
-// 			&& _.isNaN(cartesian_point[1]) === false
-// 			&& _.isNaN(cartesian_point[2]) === false
+// 			isNaN(cartesian_point[0]) === false
+// 			&& isNaN(cartesian_point[1]) === false
+// 			&& isNaN(cartesian_point[2]) === false
 // 		) {
-// 			_.set(data, '[' + index + '].coordinates.cartesian.raw', {
+// 			set(data, '[' + index + '].coordinates.cartesian.raw', {
 // 				'x': cartesian_point[0],
 // 				'y': cartesian_point[1],
 // 				'z': cartesian_point[2]
@@ -183,10 +189,10 @@ function racing_line_points(data: Array<any>, device_profile: { log_indicies: an
 // 	window.console.log('parser.recenter')
 
 // 	data.forEach(function (point, index) {
-// 		_.set(data, '[' + index + '].coordinates.cartesian.raw', {
-// 			'x': (_.get(point, 'coordinates.cartesian.raw.x') - x),
-// 			'y': (_.get(point, 'coordinates.cartesian.raw.y') - y),
-// 			'z': (_.get(point, 'coordinates.cartesian.raw.z') - z)
+// 		set(data, '[' + index + '].coordinates.cartesian.raw', {
+// 			'x': (get(point, 'coordinates.cartesian.raw.x') - x),
+// 			'y': (get(point, 'coordinates.cartesian.raw.y') - y),
+// 			'z': (get(point, 'coordinates.cartesian.raw.z') - z)
 // 		})
 // 	})
 // }
@@ -223,18 +229,18 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 				const points_to_average = data.slice((index - bound), (index + bound))
 
 				points_to_average.forEach(function (point_to_average) {
-					average_point.x += _.get(point_to_average, 'coordinates.cartesian.raw.x')
-					average_point.y += _.get(point_to_average, 'coordinates.cartesian.raw.y')
-					average_point.z += _.get(point_to_average, 'coordinates.cartesian.raw.z')
+					average_point.x += get(point_to_average, 'coordinates.cartesian.raw.x')
+					average_point.y += get(point_to_average, 'coordinates.cartesian.raw.y')
+					average_point.z += get(point_to_average, 'coordinates.cartesian.raw.z')
 				})
 
 				average_point.x = (average_point.x / points_to_average.length)
 				average_point.y = (average_point.y / points_to_average.length)
 				average_point.z = (average_point.z / points_to_average.length)
 			} else {
-				average_point.x = _.get(point, 'coordinates.cartesian.raw.x')
-				average_point.y = _.get(point, 'coordinates.cartesian.raw.y')
-				average_point.z = _.get(point, 'coordinates.cartesian.raw.z')
+				average_point.x = get(point, 'coordinates.cartesian.raw.x')
+				average_point.y = get(point, 'coordinates.cartesian.raw.y')
+				average_point.z = get(point, 'coordinates.cartesian.raw.z')
 			}
 			averaged_points.push(average_point)
 
@@ -279,7 +285,7 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 
 		if (vectors_between_averaged_points.length > 0 && distances_between_averaged_points.length > 0) {
 
-			// const distance_to_smoothed_point: number = (distance_rate_of_change_to_average * _.last(distances_between_averaged_points))
+			// const distance_to_smoothed_point: number = (distance_rate_of_change_to_average * last(distances_between_averaged_points))
 			const distances_between_averaged_points_last: number = (distances_between_averaged_points[distances_between_averaged_points.length - 1]) || 0
 			const distance_to_smoothed_point: number = (distance_rate_of_change_to_average * distances_between_averaged_points_last)
 
@@ -290,7 +296,7 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 
 			const rotation_axis_vector = new AFRAME.THREE.Vector3(0, 0, 0)
 				.crossVectors(
-					// _.nth(vectors_between_averaged_points, -2),
+					// nth(vectors_between_averaged_points, -2),
 					vectors_between_averaged_points_second_to_last,
 					vectors_between_averaged_points_last,
 				)
@@ -299,8 +305,8 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 			//	predict the final angle
 			//	TODO: This is wrapping around in some places, needs work
 			// let angle_budget = (Math.PI / 2)
-			// const angle = _.nth(vectors_between_averaged_points, -2).angleTo(_.last(vectors_between_averaged_points))
-			// if (_.isNaN(angle) === false) {
+			// const angle = nth(vectors_between_averaged_points, -2).angleTo(last(vectors_between_averaged_points))
+			// if (isNaN(angle) === false) {
 			// 	angle_budget = Math.max((angle_budget - angle), 0)
 			// 	final_vector.applyAxisAngle(rotation_axis_vector, angle_budget).normalize()
 			// }
@@ -320,7 +326,7 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 			smoothed_point.z = final_vector.z
 
 			//	Broadcast the new point
-			if (_.isNull(listener) === false && _.isNull(event_name) === false) {
+			if (isNull(listener) === false && isNull(event_name) === false) {
 				listener.dispatchEvent(new CustomEvent('smoothed', {
 					'detail': {
 						'point': smoothed_point, 'index': index, 'length': length, }
@@ -330,11 +336,11 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 
 			//	Store point for returning as a separate data set
 			// if (points === true) {
-			// 	_.last(smoothed_points_by_bounds).push(smoothed_point)
+			// 	last(smoothed_points_by_bounds).push(smoothed_point)
 			// }
 
 			//	Update the input data set
-			// _.set(data, '[' + index + '].coordinates.cartesian.smoothed', smoothed_point)
+			// set(data, '[' + index + '].coordinates.cartesian.smoothed', smoothed_point)
 		}
 
 		return smoothed_point
@@ -385,7 +391,7 @@ function vector_to_north_pole(): Array<number> {
 
 // 	const strings = []
 // 	data.forEach(function (point) {
-// 		strings.push(_.get(point, path + '.x') + ' ' + _.get(point, path + '.y') + ' ' + _.get(point, path + '.z'))
+// 		strings.push(get(point, path + '.x') + ' ' + get(point, path + '.y') + ' ' + get(point, path + '.z'))
 // 	})
 // 	return strings.join(', ')
 // }
@@ -407,16 +413,16 @@ function vector_to_string(data: Coordinate.Quaternion): string {
 	window.console.log('parser.vector_to_string')
 
 	const strings = new Array<string>()
-	if (_.isUndefined(data.x) === false) {
+	if (isUndefined(data.x) === false) {
 		strings.push(String(data.x))
 	}
-	if (_.isUndefined(data.y) === false) {
+	if (isUndefined(data.y) === false) {
 		strings.push(String(data.y))
 	}
-	if (_.isUndefined(data.z) === false) {
+	if (isUndefined(data.z) === false) {
 		strings.push(String(data.z))
 	}
-	if (_.isUndefined(data.w) === false) {
+	if (isUndefined(data.w) === false) {
 		strings.push(String(data.w))
 	}
 	return strings.join(', ')

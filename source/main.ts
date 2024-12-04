@@ -1,5 +1,7 @@
 import * as AFRAME from 'aframe'
-import * as _ from 'lodash'
+import get from 'lodash/get'
+import isNull from 'lodash/isNull'
+import set from 'lodash/set'
 import {
 	Coordinate,
 	LoadedValues,
@@ -38,10 +40,10 @@ function start_aframe(callback: () => void, callback_vr_enter: () => void, callb
 	$('body').append('<a-scene background="color: #353638">')
 	$('a-scene').on('loaded', callback)
 
-	if (_.isNull(callback_vr_enter) === false) {
+	if (isNull(callback_vr_enter) === false) {
 		$('a-scene').on('enter-vr', callback_vr_enter)
 
-		if (_.isNull(callback_vr_exit) === false) {
+		if (isNull(callback_vr_exit) === false) {
 			$('a-scene').on('exit-vr', callback_vr_exit)
 		}
 	}
@@ -283,7 +285,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 
 				//	Update the existing dataset
 				for (index = 0, length = parsed_message.points.length; index < length; index++) {
-					_.set(lap_points, '[' + (_.get(parsed_message, 'index', 0) + index) + '].coordinates.cartesian.smoothed', parsed_message.points[index])
+					set(lap_points, '[' + (get(parsed_message, 'index', 0) + index) + '].coordinates.cartesian.smoothed', parsed_message.points[index])
 				}
 				break
 
