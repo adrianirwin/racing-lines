@@ -24,14 +24,6 @@ import './components/SmoothingInspector'
 //	Styles
 import './styles/main.scss'
 
-//	Web Workers
-// TODO: Create and tear-down as needed, instead of re-using
-const workers = {
-	grapher:			'./workers/grapher.js',
-	log_file_parser:	'./workers/log_file_parser.js',
-	smoother:			'./workers/smoother.js',
-}
-
 //	Global State
 const vr_ui_elements = new Array<HTMLElement>()
 const uploaded_sessions = <State.Sessions>{}
@@ -64,7 +56,7 @@ function allow_file_upload(): void {
 	window.console.log('allow_file_upload')
 
 	const file_uploader = document.getElementById('file_upload') as HTMLInputElement
-	file_loader.add_listener(new Worker(new URL(workers.log_file_parser, import.meta.url)), file_uploader, file_finished_loading)
+	file_loader.add_listener(new Worker(new URL('./workers/log_file_parser.js', import.meta.url)), file_uploader, file_finished_loading)
 }
 
 function file_finished_loading(session: Log.Session): void {
@@ -201,7 +193,7 @@ function render_racing_line(session: Log.Session): void {
 	})
 
 	//	Draw raw GPS racing line
-	const grapher = new Worker(new URL(workers.grapher, import.meta.url))
+	const grapher = new Worker(new URL('./workers/grapher.js', import.meta.url))
 	let coords: Array<string> | null = null
 	let parsed_message: {
 		command: string,
@@ -274,7 +266,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 	})
 
 	//	Run smoothing algorithm on current lap
-	const smoother = new Worker(new URL(workers.smoother, import.meta.url))
+	const smoother = new Worker(new URL('./workers/smoother.js', import.meta.url))
 	let index = 0
 	let smoothed_coords: Array<string> | null = null
 	let parsed_message: {
@@ -359,7 +351,7 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 	})
 
 	//	Draw speed graph
-	const grapher = new Worker(new URL(workers.grapher, import.meta.url))
+	const grapher = new Worker(new URL('./workers/grapher.js', import.meta.url))
 	let value_points = null
 	let floor_points = null
 	let delta_points = null
