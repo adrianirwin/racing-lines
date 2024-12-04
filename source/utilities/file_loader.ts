@@ -1,6 +1,6 @@
 import { Coordinate } from './../models/Geometry'
 import {
-	LoadedValues,
+	Log,
 	RacingLinePoint,
 } from './../models/Logs'
 import { WebWorker } from './../models/Workers'
@@ -10,12 +10,17 @@ import { WebWorker } from './../models/Workers'
 //	- Object of lat/long coordinates representing the outer boundaries of the GPS points
 //	- Object representing a vector to the center of the track from the center of the earth
 //	- Array of indicies indicating which points are lap boundaries
-function parse_file(worker: Worker, files: FileList | null, callback: (values: LoadedValues) => void): void {
+function parse_file(worker: Worker, files: FileList | null, callback: (values: Log.File & Log.LoadedValues) => void): void {
+
+	const file: Log.File = {
+		lastModified: files?.item(0)?.lastModified ?? NaN,
+		name: files?.item(0)?.name ?? '',
+	}
 
 	//	Process all of the newly loaded data
-	new Promise((resolve: (values: LoadedValues) => void, reject) => {
+	new Promise((resolve: (values: Log.File & Log.LoadedValues) => void, reject) => {
 
-		const values: LoadedValues = {
+		const values: Log.LoadedValues = {
 			points: new Array<RacingLinePoint>(),
 			bounds_coords: <Coordinate.GeographicBounds>{
 				latitude_northmost: NaN,
@@ -27,9 +32,9 @@ function parse_file(worker: Worker, files: FileList | null, callback: (values: L
 			lap_boundaries: new Array<number>(),
 		}
 
-		let parsed_message: (LoadedValues & { command: string }) | null = null
+		let parsed_message: (Log.LoadedValues & { command: string }) | null = null
 		let loader_message = function (event: MessageEvent): void {
-			parsed_message = JSON.parse(event.data) as (LoadedValues & { command: string })
+			parsed_message = JSON.parse(event.data) as (Log.LoadedValues & { command: string })
 
 			switch (parsed_message.command) {
 				case WebWorker.Task.MetadataLoaded:
@@ -45,7 +50,10 @@ function parse_file(worker: Worker, files: FileList | null, callback: (values: L
 				case WebWorker.Task.Terminate:
 					parsed_message = null
 
-					resolve(values)
+					resolve(<Log.File & Log.LoadedValues>{
+						...file,
+						...values,
+					})
 					worker.removeEventListener('message', loader_message)
 					break
 			}
@@ -54,13 +62,13 @@ function parse_file(worker: Worker, files: FileList | null, callback: (values: L
 		worker.addEventListener('message', loader_message)
 		worker.postMessage(files)
 
-	}).then((values: LoadedValues): void => {
+	}).then((values: Log.File & Log.LoadedValues): void => {
 		callback(values)
 	})
 }
 
 //	Add a listener listening for the onChange event on a <input type="file"> element
-export function add_listener(worker: Worker, input: HTMLInputElement, callback: (values: LoadedValues) => void): void {
+export function add_listener(worker: Worker, input: HTMLInputElement, callback: (values: Log.File & Log.LoadedValues) => void): void {
 	input.addEventListener('change', function handle_change() {
 		input.removeEventListener('change', handle_change)
 		parse_file(worker, input.files, callback)

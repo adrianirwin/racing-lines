@@ -4,9 +4,10 @@ import isNull from 'lodash/isNull'
 import set from 'lodash/set'
 import { Coordinate } from './models/Geometry'
 import {
-	LoadedValues,
+	Log,
 	RacingLinePoint,
 } from './models/Logs'
+import { State } from './models/States'
 import { WebWorker } from './models/Workers'
 import * as file_parser from './utilities/file_parser'
 import * as file_loader from './utilities/file_loader'
@@ -24,14 +25,16 @@ import './components/SmoothingInspector'
 import './styles/main.scss'
 
 //	Web Workers
+// TODO: Create and tear-down as needed, instead of re-using
 const workers = {
 	grapher: new Worker(new URL('./workers/grapher.js', import.meta.url)),
 	loader: new Worker(new URL('./workers/loader.js', import.meta.url)),
 	smoother: new Worker(new URL('./workers/smoother.js', import.meta.url)),
 }
 
-//	Globals
+//	Global State
 const vr_ui_elements = new Array<HTMLElement>()
+const uploaded_files = <State.Files>{}
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback: () => void, callback_vr_enter: () => void, callback_vr_exit: () => void): void {
@@ -63,10 +66,13 @@ function allow_file_upload(): void {
 	file_loader.add_listener(workers.loader, file_uploader, file_finished_loading)
 }
 
-function file_finished_loading(values: LoadedValues): void {
+function file_finished_loading(values: Log.File & Log.LoadedValues): void {
 	window.console.log('file_finished_loading')
 
-	render_racing_line(values)
+	//	Store in the global state
+	uploaded_files[values.name] = values
+
+	render_racing_line(uploaded_files[values.name])
 	allow_file_upload()
 }
 
@@ -134,7 +140,7 @@ function start_vr_scene(): void {
 	// })
 }
 
-function render_racing_line(values: LoadedValues): void {
+function render_racing_line(values: Log.LoadedValues): void {
 	window.console.log('render_racing_line')
 
 	const racing_line_points = values.points

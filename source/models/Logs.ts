@@ -1,5 +1,20 @@
 import { Coordinate } from './Geometry'
 
+export namespace Log {
+	export interface File {
+		lastModified: number
+		name: string
+	}
+
+	// TODO: This name sucks
+	export interface LoadedValues {
+		bounds_coords: Coordinate.GeographicBounds
+		lap_boundaries: Array<number>
+		points: Array<RacingLinePoint>
+		vector_to_center: Array<number>
+	}
+}
+
 interface CarDiagnostics {
 	battery_voltage: number
 	coolant_temperature: number
@@ -55,12 +70,4 @@ export interface RacingLinePoint {
 	performance: LapPerformance
 	rotation: Coordinate.Orientation
 	timing: Timing
-}
-
-// TODO: This name sucks
-export interface LoadedValues {
-	bounds_coords: Coordinate.GeographicBounds
-	lap_boundaries: Array<number>
-	points: Array<RacingLinePoint>
-	vector_to_center: Array<number>
 }
