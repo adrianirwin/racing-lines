@@ -1,4 +1,5 @@
 import { Coordinate } from './Geometry'
+import { Log } from './Logs'
 
 export namespace Schema {
 	export type ArrayNumber = {
@@ -21,6 +22,11 @@ export namespace Schema {
 		type: string
 		default: Coordinate.Quaternion
 	}
+	export type Session = {
+		default: Log.Session
+		parse: (value: Log.Session) => Log.Session
+		stringify: (value: Log.Session) => string
+	}
 	export type String = {
 		type: string
 		default: string
@@ -32,6 +38,7 @@ export namespace Schema {
 		T extends Schema.Coords ?			Array<Coordinate.Cartesian3D> :
 		T extends Schema.Number ?			number :
 		T extends Schema.Quaternion ?		Coordinate.Quaternion :
+		T extends Schema.Session ?			Log.Session :
 		T extends Schema.String ?			string :
 		T
 

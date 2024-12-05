@@ -19,6 +19,7 @@ import './components/GroundPlane'
 import './components/LineGraph'
 import './components/RacingDots'
 import './components/RacingLine'
+import './components/SessionList'
 import './components/SmoothingInspector'
 
 //	Styles
@@ -68,6 +69,9 @@ function file_finished_loading(session: Log.Session): void {
 	//	Store in the global state
 	// TODO: For now...
 	uploaded_sessions[session.name] = session
+
+	const session_list = document.querySelector('a-entity[session_list]')
+	session_list.setAttribute('session_list', { session: uploaded_sessions[session.name] })
 
 	// augment_raw_session_values(session.name)
 	render_racing_line(uploaded_sessions[session.name])
@@ -200,6 +204,14 @@ function start_vr_scene(): void {
 	// 		hand_controls_right.components['obj-model'].model.position.copy(new AFRAME.THREE.Vector3(0.006, 0.004, -0.053))
 	// 	}, 250, hand_controls_left, hand_controls_right)
 	// })
+
+	//	Sessions List
+	const session_list = document.createElement('a-entity')
+
+	session_list.setAttribute('position', '0.0 0.0 0.0')
+	session_list.setAttribute('session_list', {})
+
+	scene.appendChild(session_list)
 }
 
 function render_racing_line(session: Log.Session): void {
