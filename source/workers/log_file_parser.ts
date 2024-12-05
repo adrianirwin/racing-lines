@@ -11,7 +11,6 @@ import { WebWorker } from './../models/Workers'
 import * as devices from './../utilities/devices'
 
 self.addEventListener('message', (event: MessageEvent): void => {
-	const fileList: FileList = event.data
 	const fileReader = new FileReader()
 
 	fileReader.onload = (): void => {
@@ -203,5 +202,5 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		}, 1)
 	}
 
-	fileReader.readAsDataURL(fileList.item(0) as Blob)
+	fileReader.readAsDataURL(event.data as Blob)
 })

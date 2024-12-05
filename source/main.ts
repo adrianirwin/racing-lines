@@ -9,8 +9,8 @@ import {
 } from './models/Logs'
 import { State } from './models/States'
 import { WebWorker } from './models/Workers'
-import * as file_parser from './utilities/file_parser'
-import * as file_loader from './utilities/file_loader'
+import * as util_file_parser from './utilities/file_parser'
+import * as util_file_uploader from './utilities/file_uploader'
 import * as util_graphing from './utilities/graphing'
 
 //	Custom A-Frame Components
@@ -55,8 +55,11 @@ function start_web_ui(): void {
 function allow_file_upload(): void {
 	window.console.log('allow_file_upload')
 
-	const file_uploader = document.getElementById('file_upload') as HTMLInputElement
-	file_loader.add_listener(new Worker(new URL('./workers/log_file_parser.js', import.meta.url)), file_uploader, file_finished_loading)
+	util_file_uploader.listen(
+		document.getElementById('file_upload') as HTMLInputElement,
+		new Worker(new URL('./workers/log_file_parser.js', import.meta.url)),
+		file_finished_loading,
+	)
 }
 
 function file_finished_loading(session: Log.Session): void {
@@ -66,8 +69,73 @@ function file_finished_loading(session: Log.Session): void {
 	// TODO: For now...
 	uploaded_sessions[session.name] = session
 
+	// augment_raw_session_values(session.name)
 	render_racing_line(uploaded_sessions[session.name])
 	allow_file_upload()
+}
+
+function augment_raw_session_values(session_name: string): void {
+	const session = uploaded_sessions[session_name]
+	session.processing = true
+
+	//	Smooth GPS values
+	const smoother = new Worker(new URL('./workers/smoother.js', import.meta.url))
+	let index = 0
+	let smoothed_coords: Array<string> | null = null
+	let parsed_message: {
+		command: string,
+		points: Array<Coordinate.Cartesian3D>,
+		index: number,
+	} | null = null
+	let smoother_message = (event: MessageEvent) => {
+		parsed_message = JSON.parse(event.data)
+
+		switch (parsed_message?.command) {
+			case WebWorker.Task.PointsSmoothed:
+				smoothed_coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
+
+				//	Update the existing dataset
+				for (index = 0, length = parsed_message.points.length; index < length; index++) {
+					set(session.points, '[' + (get(parsed_message, 'index', 0) + index) + '].coordinates.cartesian.smoothed', parsed_message.points[index])
+				}
+				break
+
+			case WebWorker.Task.Terminate:
+				smoothed_coords = null
+				parsed_message = null
+
+				smoother.removeEventListener('message', smoother_message)
+				session.processing = false
+				break
+		}
+	}
+	smoother.addEventListener('message', smoother_message)
+
+	//	Iteratively feed in the points to the smoothing worker
+	let loop_index = 0
+	const loop_size = 100
+	const loop_limit = session.points.length
+
+	const interval_id = window.setInterval(() => {
+		if ((loop_index * loop_size) < loop_limit) {
+			smoother.postMessage(JSON.stringify({
+				command:			WebWorker.Task.SmoothPointsBatch,
+				bounds:				[320, 160, 80, 40, 20],
+				index:				(loop_index * loop_size),
+				points:				session.points.slice(Math.max(((loop_index * loop_size) - 320), 0), (((loop_index + 1) * loop_size) + 320)),
+				start_offset:		Math.min((loop_index * loop_size), 320),
+				steps:				loop_size,
+				weights:			[0.03, 0.07, 0.9],
+			}))
+			loop_index++
+		}
+		else {
+			window.clearInterval(interval_id)
+			smoother.postMessage(JSON.stringify({
+				command:			WebWorker.Task.SmoothPointsFinished,
+			}))
+		}
+	}, 1)
 }
 
 function start_vr_ui(): void {
@@ -153,7 +221,7 @@ function render_racing_line(session: Log.Session): void {
 	//	 - to the north pole ('up') in earth space
 	//	 - cross product along which to rotate to translate from one to the other
 	const v3_to_center =			new AFRAME.THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2])
-	const vector_to_north_pole =	file_parser.vector_to_north_pole()
+	const vector_to_north_pole =	util_file_parser.vector_to_north_pole()
 	const v3_to_north_pole =		new AFRAME.THREE.Vector3(vector_to_north_pole[0], vector_to_north_pole[1], vector_to_north_pole[2])
 	let v3_cross =					new AFRAME.THREE.Vector3(0, 0, 0)
 
@@ -189,7 +257,7 @@ function render_racing_line(session: Log.Session): void {
 	raw_line.setAttribute('racing_line', {
 		coords: '',
 		length: test_lap.length,
-		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion),
+		reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
 	})
 
 	//	Draw raw GPS racing line
@@ -261,7 +329,7 @@ function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coo
 	smoothed_line.setAttribute('racing_line', {
 		coords: '',
 		length: lap_points.length,
-		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion),
+		reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
 		colour: '#FF66FF',
 	})
 
@@ -341,13 +409,13 @@ function render_graphs(lap_points: Array<RacingLinePoint>, up_vector: Coordinate
 	graphed_line.setAttribute('filled_graph', {
 		coords: '',
 		length: lap_points.length,
-		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion),
+		reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
 	})
 
 	graphed_line.setAttribute('line_graph', {
 		coords: '',
 		length: lap_points.length,
-		reorientation_quaternion: file_parser.vector_to_string(reorientation_quaternion),
+		reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
 	})
 
 	//	Draw speed graph

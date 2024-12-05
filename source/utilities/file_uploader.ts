@@ -10,11 +10,11 @@ import { WebWorker } from './../models/Workers'
 //	- Object of lat/long coordinates representing the outer boundaries of the GPS points
 //	- Object representing a vector to the center of the track from the center of the earth
 //	- Array of indicies indicating which points are lap boundaries
-function parse_file(worker: Worker, files: FileList | null, callback: (session: Log.Session) => void): void {
+function parse_file(worker: Worker, file: File, callback: (session: Log.Session) => void): void {
 
-	const file: Log.File = {
-		last_modified: files?.item(0)?.lastModified ?? NaN,
-		name: files?.item(0)?.name ?? '',
+	const parsed_file: Log.File = {
+		last_modified: file.lastModified ?? NaN,
+		name: file.name ?? '',
 	}
 
 	//	Process all of the newly loaded data
@@ -50,14 +50,14 @@ function parse_file(worker: Worker, files: FileList | null, callback: (session: 
 				case WebWorker.Task.Terminate:
 					parsed_message = null
 
-					resolve(new Log.Session(file, values))
+					resolve(new Log.Session(parsed_file, values))
 					worker.removeEventListener('message', worker_message_callback)
 					break
 			}
 		}
 
 		worker.addEventListener('message', worker_message_callback)
-		worker.postMessage(files)
+		worker.postMessage(file as Blob)
 
 	}).then((session: Log.Session): void => {
 		callback(session)
@@ -65,10 +65,14 @@ function parse_file(worker: Worker, files: FileList | null, callback: (session: 
 }
 
 //	Add a listener listening for the onChange event on a <input type="file"> element
-export function add_listener(worker: Worker, input: HTMLInputElement, callback: (session: Log.Session) => void): void {
+export function listen(input: HTMLInputElement, worker: Worker, callback: (session: Log.Session) => void): void {
 	input.addEventListener('change', function handle_change() {
+		const file = input.files?.item(0)
 		input.removeEventListener('change', handle_change)
-		parse_file(worker, input.files, callback)
+
+		if (file) {
+			parse_file(worker, file, callback)
+		}
 		input.value = ''
 	})
 }

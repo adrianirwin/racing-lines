@@ -15,14 +15,21 @@ export namespace Log {
 	}
 
 	export class Session implements File, ParsedValues {
+		processing: boolean
+
+		//	Log.File
+		name: string
+		last_modified: number
+
+		//	Log.ParsedValues
 		bounds_coords: Coordinate.GeographicBounds
 		lap_first_point_indexes: Array<number>
-		last_modified: number
-		name: string
 		points: Array<RacingLinePoint>
 		vector_to_center: Array<number>
 
 		constructor(file: File, parsed_values: ParsedValues) {
+			this.processing = false
+
 			this.last_modified = file.last_modified
 			this.name = file.name
 
