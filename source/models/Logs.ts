@@ -1,4 +1,6 @@
+import { BehaviorSubject } from 'rxjs'
 import { Coordinate } from './Geometry'
+import { WebWorker } from './Workers'
 
 export namespace Log {
 	export interface File {
@@ -15,7 +17,7 @@ export namespace Log {
 	}
 
 	export class Session implements File, ParsedValues {
-		processing: boolean
+		$smoothing_progress: BehaviorSubject<number>
 
 		//	Log.File
 		name: string
@@ -28,7 +30,7 @@ export namespace Log {
 		vector_to_center: Array<number>
 
 		constructor(file: File, parsed_values: ParsedValues) {
-			this.processing = false
+			this.$smoothing_progress = new BehaviorSubject(0.0)
 
 			this.last_modified = file.last_modified
 			this.name = file.name
@@ -37,6 +39,8 @@ export namespace Log {
 			this.lap_first_point_indexes = parsed_values.lap_first_point_indexes
 			this.points = parsed_values.points
 			this.vector_to_center = parsed_values.vector_to_center
+
+			this.smooth_cartesian_coords()
 		}
 
 		get total_laps(): number {
@@ -52,6 +56,75 @@ export namespace Log {
 				)
 			}
 			return new Array<RacingLinePoint>()
+		}
+
+		smooth_cartesian_coords(): void {
+
+			//	Smooth GPS values
+			const worker = new Worker(new URL('./../workers/smoother.js', import.meta.url))
+			const points_l = this.points.length
+
+			let smoothed_coords: Array<string> | null = null
+
+			let parsed_message: {
+				command: string,
+				points: Array<Coordinate.Cartesian3D>,
+				index: number,
+			} | null = null
+
+			const worker_message = (event: MessageEvent) => {
+				parsed_message = JSON.parse(event.data)
+
+				switch (parsed_message?.command) {
+					case WebWorker.Task.PointsSmoothed:
+						smoothed_coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
+
+						//	Update the existing dataset
+						for (let i = 0, l = parsed_message.points.length; i < l; i++) {
+							this.points[(parsed_message.index) + i].coordinates.cartesian.smoothed = parsed_message.points[i]
+						}
+
+						this.$smoothing_progress.next(parsed_message.index / points_l)
+						break
+
+					case WebWorker.Task.Terminate:
+						smoothed_coords = null
+						parsed_message = null
+
+						worker.removeEventListener('message', worker_message)
+
+						this.$smoothing_progress.next(1.0)
+						this.$smoothing_progress.complete()
+						break
+				}
+			}
+			worker.addEventListener('message', worker_message)
+
+			//	Iteratively feed in the points to the smoothing worker
+			let send_i = 0
+			const step = 100
+
+			const interval_id = window.setInterval(() => {
+				if ((send_i * step) < points_l) {
+					worker.postMessage(JSON.stringify({
+						command:			WebWorker.Task.SmoothPointsBatch,
+						bounds:				[320, 160, 80, 40, 20],
+						index:				(send_i * step),
+						points:				this.points.slice(Math.max(((send_i * step) - 320), 0), (((send_i + 1) * step) + 320)),
+						start_offset:		Math.min((send_i * step), 320),
+						steps:				step,
+						weights:			[0.03, 0.07, 0.9],
+					}))
+					send_i++
+				}
+				else {
+					window.clearInterval(interval_id)
+					worker.postMessage(JSON.stringify({
+						command:			WebWorker.Task.SmoothPointsFinished,
+					}))
+				}
+			}, 1)
+
 		}
 	}
 }
