@@ -31,7 +31,6 @@ self.addEventListener('message', (event: MessageEvent): void => {
 				command:		WebWorker.Task.PointsSmoothed,
 				points:			smooth_by_averages(
 									message.points,
-									// cloned_points,
 									message.bounds,
 									message.weights,
 									message.start_offset,
@@ -78,7 +77,8 @@ function smooth_by_averages(
 				average_point.x = (average_point.x / points_to_average.length)
 				average_point.y = (average_point.y / points_to_average.length)
 				average_point.z = (average_point.z / points_to_average.length)
-			} else {
+			}
+			else {
 				average_point.x = get(points, '[' + count + '].coordinates.cartesian.raw.x')
 				average_point.y = get(points, '[' + count + '].coordinates.cartesian.raw.y')
 				average_point.z = get(points, '[' + count + '].coordinates.cartesian.raw.z')
@@ -108,7 +108,8 @@ function smooth_by_averages(
 		for (let i = 1, l = distances_between_averaged_points.length; i < l; i++) {
 			if (distances_between_averaged_points[(i - 1)] > distances_between_averaged_points[i]) {
 				distance_rate_of_change_to_average += ((distances_between_averaged_points[i] / distances_between_averaged_points[(i - 1)]) * weights[(i - 1)])
-			} else {
+			}
+			else {
 				distance_rate_of_change_to_average += (1 * weights[(i - 1)])
 			}
 		}
