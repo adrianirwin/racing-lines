@@ -23,7 +23,7 @@ export namespace Schema {
 		default: Coordinate.Quaternion
 	}
 	export type Session = {
-		default: Log.Session
+		default: null
 		parse: (value: Log.Session) => Log.Session
 		stringify: (value: Log.Session) => string
 	}

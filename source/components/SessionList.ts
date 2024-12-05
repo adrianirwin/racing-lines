@@ -20,13 +20,13 @@ interface SessionList {
 AFRAME.registerComponent<AFRAME.ComponentDefinition<SessionList>>('session_list', {
 	schema: {
 		session: {
-			default: <Log.Session>{},
+			default: null,
 			parse: (value: Log.Session): Log.Session => {
-				console.log('session', value)
 				return value
 			},
 			stringify: (value: Log.Session): string => {
-				return 'Session: ' + Object.keys(value).length
+				const count = Object.keys(value).length
+				return count + ' session' + (count === 1 ?  '' : 's')
 			}
 		}
 	},
@@ -40,9 +40,9 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SessionList>>('session_list'
 	update: function (oldData) {
 		const self = this as unknown as AFRAME.Component<SessionListData>
 
-		// TODO: ick
-		delete self.data.sessions['undefined']
-
-		self.data.sessions[self.data.session.name] = self.data.session
+		// TODO: AFRAME.utils.deepEqual and AFRAME.utils.diff -- look useful
+		if (self.data.session ?? false) {
+			self.data.sessions[self.data.session.name] = self.data.session
+		}
 	},
 })
