@@ -85,5 +85,5 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<GroundPlane>>('ground_plane'
 		const self = this as unknown as AFRAME.Component<GroundPlaneData>
 
 		self.el.removeObject3D('ground_plane_dots')
-	}
+	},
 })

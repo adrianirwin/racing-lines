@@ -2,6 +2,7 @@
 // 	schema: {
 // 		hand: {type: 'selector', default: '#left_hand'}
 // 	},
+
 // 	init: () => {
 // 		window.console.info('grabbable', this, this.data.hand)
 
@@ -20,5 +21,5 @@
 // 			this.el.setAttribute('rotation', rotation)
 // 			// this.el.setAttribute()
 // 		}
-// 	}
+// 	},
 // })

@@ -142,5 +142,5 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<LineGraph>>('line_graph', {
 		const self = this as unknown as AFRAME.Component<LineGraphData>
 
 		self.el.removeObject3D('racing_line')
-	}
+	},
 })

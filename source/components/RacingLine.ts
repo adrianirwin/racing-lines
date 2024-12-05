@@ -180,5 +180,5 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingLine>>('racing_line', 
 		const self = this as unknown as AFRAME.Component<RacingLineData>
 
 		self.el.removeObject3D('racing_line')
-	}
+	},
 })

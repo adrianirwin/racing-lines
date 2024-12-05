@@ -151,5 +151,5 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 		const self = this as unknown as AFRAME.Component<SmoothingInspectorData>
 
 		self.el.removeObject3D('smoothing_inspector')
-	}
+	},
 })
