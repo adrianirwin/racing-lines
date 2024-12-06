@@ -13,13 +13,17 @@ import * as util_file_parser from './utilities/file_parser'
 import * as util_file_uploader from './utilities/file_uploader'
 import * as util_graphing from './utilities/graphing'
 
-//	Custom A-Frame Components
+//	Views
+import { SessionList } from './views/SessionList'
+
+//	A-Frame Components
 import './components/FilledGraph'
 import './components/GroundPlane'
 import './components/LineGraph'
 import './components/RacingDots'
 import './components/RacingLine'
 import './components/SessionList'
+import './components/SessionSummary'
 import './components/SmoothingInspector'
 
 //	Styles
@@ -27,6 +31,7 @@ import './styles/main.scss'
 
 //	Global State
 const vr_ui_elements = new Array<HTMLElement>()
+const views = <{ [key: string]: any }>{}
 const uploaded_sessions = <State.Sessions>{}
 
 //	Add A-Frame's <a-scene> to start the scene
@@ -69,9 +74,7 @@ function file_finished_loading(session: Log.Session): void {
 	//	Store in the global state
 	// TODO: For now...
 	uploaded_sessions[session.name] = session
-
-	const session_list = document.querySelector('a-entity[session_list]')
-	session_list.setAttribute('session_list', { session: uploaded_sessions[session.name] })
+	views['SessionList'].add_session(uploaded_sessions[session.name])
 
 	// augment_raw_session_values(session.name)
 	render_racing_line(uploaded_sessions[session.name])
@@ -142,12 +145,8 @@ function start_vr_scene(): void {
 	// })
 
 	//	Sessions List
-	const session_list = document.createElement('a-entity')
-
-	session_list.setAttribute('position', '0.0 0.0 0.0')
-	session_list.setAttribute('session_list', {})
-
-	scene.appendChild(session_list)
+	views['SessionList'] = new SessionList(document)
+	scene.appendChild(views['SessionList'].element)
 }
 
 function render_racing_line(session: Log.Session): void {

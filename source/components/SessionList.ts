@@ -28,7 +28,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SessionList>>('session_list'
 				const count = Object.keys(value).length
 				return count + ' session' + (count === 1 ?  '' : 's')
 			}
-		}
+		},
 	},
 
 	init: function () {

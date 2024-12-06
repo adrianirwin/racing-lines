@@ -10,6 +10,10 @@ export namespace Schema {
 		type: string
 		default: string
 	}
+	export type Coord = {
+		type: string
+		default: Coordinate.Cartesian3D
+	}
 	export type Coords = {
 		parse: (value: string) => Array<Coordinate.Cartesian3D>
 		default: Array<Coordinate.Cartesian3D>
@@ -40,6 +44,7 @@ export namespace Schema {
 		T extends Schema.Quaternion ?		Coordinate.Quaternion :
 		T extends Schema.Session ?			Log.Session :
 		T extends Schema.String ?			string :
+		T extends Schema.Coord ?			Coordinate.Cartesian3D : // This has to come after Schema.Quaternion ¯\_(ツ)_/¯
 		T
 
 	export type ToData<T> = {
