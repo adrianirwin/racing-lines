@@ -44,7 +44,7 @@ export namespace Schema {
 		T extends Schema.Quaternion ?		Coordinate.Quaternion :
 		T extends Schema.Session ?			Log.Session :
 		T extends Schema.String ?			string :
-		T extends Schema.Coord ?			Coordinate.Cartesian3D : // This has to come after Schema.Quaternion ¯\_(ツ)_/¯
+		T extends Schema.Coord ?			Coordinate.Cartesian3D : // This has to come after Schema.Quaternion ¯\_(ツ)_/¯ (it could be duck-typing iteratively...)
 		T
 
 	export type ToData<T> = {
