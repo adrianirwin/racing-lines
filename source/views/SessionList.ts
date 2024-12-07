@@ -1,43 +1,51 @@
 import * as AFRAME from 'aframe'
 import { Log } from './../models/Logs'
 import { View } from './Views'
+import SessionThumbnail from './SessionThumbnail'
 
-export class SessionList {
-	element: AFRAME.Entity
-	session_summaries: View.AFRAMEEntityMap
+export default  class SessionList {
+	root_el: AFRAME.Entity
+	thumbnails_el: View.SessionThumbnailEntityMap
 
 	constructor(document: HTMLDocument) {
-		this.element = document.createElement('a-entity')
-		this.element.setAttribute('id', 'session_list')
-		this.element.setAttribute('position', '0.0 1.6 -0.25')
-		this.element.setAttribute('session_list', {})
+		this.root_el = document.createElement('a-entity')
+		this.root_el.setAttribute('id', 'session_list')
+		this.root_el.setAttribute('position', '0.0 0.0 0.0')
+		this.root_el.setAttribute('session_list', {})
 
-		this.session_summaries = <View.AFRAMEEntityMap>{}
+		this.thumbnails_el = <View.SessionThumbnailEntityMap>{}
+
+		const title = document.createElement('a-entity')
+		title.setAttribute('position', '0.0 0.0 0.0')
+		title.setAttribute('text', {
+			'anchor': 'left',
+			'color': '#F2B718',
+			'letterSpacing': 16,
+			'width': 0.3,
+			'value': 'SESSIONS',
+		})
+
+		const box = document.createElement('a-plane')
+		box.setAttribute('position', '0.15 0.0 -0.0025')
+		box.setAttribute('width', 0.32)
+		box.setAttribute('height', 0.02)
+		box.setAttribute('color', '#262626')
+
+		this.root_el.appendChild(title)
+		this.root_el.appendChild(box)
 	}
 
-	add_session(session: Log.Session): void {
-		this.element.setAttribute('session_list', { session })
+	set_position(x: number, y: number, z: number): void {
+		this.root_el.setAttribute('position', x + ' ' + y + ' ' + z)
+	}
 
-		const session_summary = document.createElement('a-entity')
-		session_summary.setAttribute('position', '0.0 0.0 0.0')
-		session_summary.setAttribute('session_summary', { session, progress_bar_scale: 0.5 })
+	add_session(document: HTMLDocument, session: Log.Session): void {
+		const thumbnail_position = ((Object.keys(this.thumbnails_el).length * -0.06) - 0.03)
 
-		const session_name = document.createElement('a-entity')
-		session_name.setAttribute('position', '0.0 0.02 0.0')
-		session_name.setAttribute('text', {
-			'width': 0.4,
-			'anchor': 'left',
-			'color': '#FFBB00',
-			'value': session.name,
-		})
+		const thumbnail = new SessionThumbnail(document, session)
+		thumbnail.set_position(0.0, thumbnail_position, 0.0)
 
-		session_summary.appendChild(session_name)
-		this.element.appendChild(session_summary)
-
-		session.$smoothing_progress.subscribe((progress: number) => {
-			session_summary.setAttribute('session_summary', { progress: progress })
-		})
-
-		this.session_summaries[session.name] = session_summary
+		this.root_el.appendChild(thumbnail.root_el)
+		this.thumbnails_el[session.name] = thumbnail
 	}
 }

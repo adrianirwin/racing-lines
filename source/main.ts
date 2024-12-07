@@ -14,7 +14,7 @@ import * as util_file_uploader from './utilities/file_uploader'
 import * as util_graphing from './utilities/graphing'
 
 //	Views
-import { SessionList } from './views/SessionList'
+import SessionList from './views/SessionList'
 
 //	A-Frame Components
 import './components/FilledGraph'
@@ -74,7 +74,7 @@ function file_finished_loading(session: Log.Session): void {
 	//	Store in the global state
 	// TODO: For now...
 	uploaded_sessions[session.name] = session
-	views['SessionList'].add_session(uploaded_sessions[session.name])
+	views['SessionList'].add_session(document, uploaded_sessions[session.name])
 
 	// augment_raw_session_values(session.name)
 	render_racing_line(uploaded_sessions[session.name])
@@ -146,7 +146,8 @@ function start_vr_scene(): void {
 
 	//	Sessions List
 	views['SessionList'] = new SessionList(document)
-	scene.appendChild(views['SessionList'].element)
+	views['SessionList'].set_position(0.0, 1.6, -0.25)
+	scene.appendChild(views['SessionList'].root_el)
 }
 
 function render_racing_line(session: Log.Session): void {
