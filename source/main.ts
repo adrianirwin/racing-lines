@@ -74,10 +74,8 @@ function file_finished_loading(session: Log.Session): void {
 	//	Store in the global state
 	// TODO: For now...
 	uploaded_sessions[session.name] = session
-	views['SessionList'].add_session(document, uploaded_sessions[session.name])
+	views['SessionList'].add_session(document, uploaded_sessions[session.name], render_racing_line)
 
-	// augment_raw_session_values(session.name)
-	render_racing_line(uploaded_sessions[session.name])
 	allow_file_upload()
 }
 
@@ -113,6 +111,8 @@ function start_vr_scene(): void {
 	window.console.log('start_vr_scene')
 
 	const scene = document.querySelector('a-scene')
+	scene.setAttribute('cursor', 'rayOrigin: mouse; fuse: false')
+	scene.setAttribute('raycaster', 'objects: .raycastable')
 
 	//	Ground Plane Grid
 	const ground_plane = document.createElement('a-entity')
@@ -150,19 +150,13 @@ function start_vr_scene(): void {
 	scene.appendChild(views['SessionList'].root_el)
 }
 
-function render_racing_line(session: Log.Session): void {
+function render_racing_line(lap_points: Array<RacingLinePoint>, session: Log.Session): void {
 	window.console.log('render_racing_line')
 
-	const racing_line_points = session.points
-	const bounds_coords = session.bounds_coords
 	const vector_to_center = session.vector_to_center
-	const lap_first_point_indexes = session.lap_first_point_indexes
 
 	//	TODO: Set dynamically/allow user input?
 	const scaling_factor =			0.01
-
-	//	Trim the data to speed up development
-	const test_lap = session.points_for_lap(3)
 
 	//	Three significant vectors
 	//	 - to the center of the track bounds in earth space
@@ -193,7 +187,8 @@ function render_racing_line(session: Log.Session): void {
 	racing_graphs.appendChild(raw_line)
 	scene.appendChild(racing_graphs)
 
-	//	TODO: Replace with swizzle function to set correct Z?
+	// TODO: Replace with swizzle function to set correct Z?
+	// TODO: This needs to be reworked now that arbitrary laps can be loaded
 	racing_graphs.object3D.rotation.x += (-90 * (Math.PI / 180))
 	racing_graphs.setAttribute('scale', (scaling_factor + ' ' + scaling_factor + ' ' + scaling_factor))
 	racing_graphs.setAttribute('position', '0.0 1.0 -1.0')
@@ -204,7 +199,7 @@ function render_racing_line(session: Log.Session): void {
 	//	Assign the racing line component to the raw and smoother line entities
 	raw_line.setAttribute('racing_line', {
 		coords: '',
-		length: test_lap.length,
+		length: lap_points.length,
 		reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
 	})
 
@@ -233,7 +228,7 @@ function render_racing_line(session: Log.Session): void {
 				grapher.removeEventListener('message', grapher_message)
 
 				//	TODO: Should probably wrap this all up in a big fat promise
-				render_smoothed_line(test_lap, v3_to_center, reorientation_quaternion)
+				render_smoothed_line(lap_points, v3_to_center, reorientation_quaternion)
 				break
 		}
 	}
@@ -242,7 +237,7 @@ function render_racing_line(session: Log.Session): void {
 	//	Iteratively feed in the raw coordinates to the graphing worker
 	let loop_index = 0
 	const loop_size = 200
-	const loop_limit = test_lap.length
+	const loop_limit = lap_points.length
 
 	const interval_id = window.setInterval(() => {
 		if ((loop_index * loop_size) < loop_limit) {
@@ -250,7 +245,7 @@ function render_racing_line(session: Log.Session): void {
 				command:			WebWorker.Task.GraphPointsBatch,
 				index:				(loop_index * loop_size),
 				path_floor:			'coordinates.cartesian.raw',
-				points:				test_lap.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
+				points:				lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
 				steps:				loop_size,
 				value_function:		util_graphing.line.name,
 			}))
