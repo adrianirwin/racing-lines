@@ -3,17 +3,19 @@ import {
 	Log,
 	RacingLinePoint,
 } from './../models/Logs'
+import LapGraph from './LapGraph'
 
 export default class SessionThumbnail {
 	root_el: AFRAME.Entity
 	session_el: AFRAME.Entity
+	graphs_root_el: AFRAME.Entity
 
+	lap_graphs: Array<LapGraph>
 	session: Log.Session
-	render_lap_callback: (lap_points: Array<RacingLinePoint>, session: Log.Session) => void
 
-	constructor(document: HTMLDocument, session: Log.Session, render_lap_callback: (lap_points: Array<RacingLinePoint>, session: Log.Session) => void) {
+	constructor(document: HTMLDocument, session: Log.Session, graphs_root_el: AFRAME.Entity) {
 		this.session = session
-		this.render_lap_callback = render_lap_callback
+		this.graphs_root_el = graphs_root_el
 
 		this.root_el = document.createElement('a-entity')
 		this.root_el.setAttribute('position', '0.0 0.0 0.0')
@@ -47,8 +49,11 @@ export default class SessionThumbnail {
 		//	Lap Boxes
 		const box_size = 0.015
 		const lap_boxes = new Array<AFRAME.Entity>()
+		this.lap_graphs = new Array<LapGraph>()
 		for (let i = 0, l = this.session.total_laps; i < l; i++) {
 			const lap_box = document.createElement('a-plane')
+			lap_boxes[i] = lap_box
+
 			lap_box.setAttribute('position', (((box_size + 0.005) * i) + 0.01) + ' -0.038 0.0')
 			lap_box.setAttribute('width', box_size)
 			lap_box.setAttribute('height', box_size)
@@ -63,7 +68,10 @@ export default class SessionThumbnail {
 				switch (e.detail) {
 					case 'selected':
 						lap_box.setAttribute('color', '#D1002A')
-						this.render_lap_callback(this.session.points_for_lap(i + 1), this.session)
+
+						const lap_graph = new LapGraph(document, this.session.points_for_lap(i + 1), this.session.vector_to_center, 0.01)
+						this.lap_graphs[i] = lap_graph
+						this.graphs_root_el.appendChild(lap_graph.root_el)
 						break
 				}
 			})
@@ -72,11 +80,11 @@ export default class SessionThumbnail {
 				switch (e.detail) {
 					case 'selected':
 						lap_box.setAttribute('color', '#383838')
+
+						this.lap_graphs[i].root_el.parentElement?.removeChild(this.lap_graphs[i].root_el)
 						break
 				}
 			})
-
-			lap_boxes.push(lap_box)
 		}
 
 		//	Background

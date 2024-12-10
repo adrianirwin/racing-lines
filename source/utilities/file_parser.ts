@@ -375,10 +375,11 @@ function smooth(data: any, bounds: any, weights: any, points = false, interval =
 // }
 
 //	Vector to the north pole
-function vector_to_north_pole(): Array<number> {
+function vector_to_north_pole(): Coordinate.Cartesian3D {
 	window.console.log('parser.vector_to_north_pole')
 
-	return ecef(90, 0)
+	const ecef_vector: Array<number> = ecef(90, 0)
+	return { x: ecef_vector[0], y: ecef_vector[1], z: ecef_vector[2] }
 }
 
 //	Prep coord data for AFrame

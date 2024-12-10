@@ -9,10 +9,12 @@ import SessionThumbnail from './SessionThumbnail'
 export default class SessionList {
 	root_el: AFRAME.Entity
 	thumbnails_el: View.SessionThumbnailEntityMap
+	graphs_root_el: AFRAME.Entity
 
-	constructor(document: HTMLDocument) {
+	constructor(document: HTMLDocument, graphs_root_el: AFRAME.Entity) {
+		this.graphs_root_el = graphs_root_el
+
 		this.root_el = document.createElement('a-entity')
-		this.root_el.setAttribute('id', 'session_list')
 		this.root_el.setAttribute('position', '0.0 0.0 0.0')
 		this.root_el.setAttribute('session_list', {})
 
@@ -44,11 +46,11 @@ export default class SessionList {
 		this.root_el.setAttribute('position', x + ' ' + y + ' ' + z)
 	}
 
-	add_session(document: HTMLDocument, session: Log.Session, render_lap_callback: (lap_points: Array<RacingLinePoint>, session: Log.Session) => void): void {
+	add_session(document: HTMLDocument, session: Log.Session): void {
 		if (this.thumbnails_el[session.name] === undefined) {
 			const thumbnail_position = ((Object.keys(this.thumbnails_el).length * -0.082) - 0.03)
 
-			const thumbnail = new SessionThumbnail(document, session, render_lap_callback)
+			const thumbnail = new SessionThumbnail(document, session, this.graphs_root_el)
 			thumbnail.set_position(0.0, thumbnail_position, 0.0)
 
 			this.root_el.appendChild(thumbnail.root_el)

@@ -13,7 +13,7 @@ export namespace Log {
 		bounds_coords: Coordinate.GeographicBounds
 		lap_first_point_indexes: Array<number>
 		points: Array<RacingLinePoint>
-		vector_to_center: Array<number>
+		vector_to_center: Coordinate.Cartesian3D
 	}
 
 	export class Session implements File, ParsedValues {
@@ -27,7 +27,7 @@ export namespace Log {
 		bounds_coords: Coordinate.GeographicBounds
 		lap_first_point_indexes: Array<number>
 		points: Array<RacingLinePoint>
-		vector_to_center: Array<number>
+		vector_to_center: Coordinate.Cartesian3D
 
 		constructor(file: File, parsed_values: ParsedValues) {
 			this.$smoothing_progress = new BehaviorSubject(0.0)

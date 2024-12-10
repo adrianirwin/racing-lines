@@ -74,7 +74,7 @@ function file_finished_loading(session: Log.Session): void {
 	//	Store in the global state
 	// TODO: For now...
 	uploaded_sessions[session.name] = session
-	views['SessionList'].add_session(document, uploaded_sessions[session.name], render_racing_line)
+	views['SessionList'].add_session(document, uploaded_sessions[session.name])
 
 	allow_file_upload()
 }
@@ -144,120 +144,17 @@ function start_vr_scene(): void {
 	// 	}, 250, hand_controls_left, hand_controls_right)
 	// })
 
-	//	Sessions List
-	views['SessionList'] = new SessionList(document)
-	views['SessionList'].set_position(0.0, 1.6, -0.25)
-	scene.appendChild(views['SessionList'].root_el)
-}
-
-function render_racing_line(lap_points: Array<RacingLinePoint>, session: Log.Session): void {
-	window.console.log('render_racing_line')
-
-	const vector_to_center = session.vector_to_center
-
-	//	TODO: Set dynamically/allow user input?
-	const scaling_factor =			0.01
-
-	//	Three significant vectors
-	//	 - to the center of the track bounds in earth space
-	//	 - to the north pole ('up') in earth space
-	//	 - cross product along which to rotate to translate from one to the other
-	const v3_to_center =			new AFRAME.THREE.Vector3(vector_to_center[0], vector_to_center[1], vector_to_center[2])
-	const vector_to_north_pole =	util_file_parser.vector_to_north_pole()
-	const v3_to_north_pole =		new AFRAME.THREE.Vector3(vector_to_north_pole[0], vector_to_north_pole[1], vector_to_north_pole[2])
-	let v3_cross =					new AFRAME.THREE.Vector3(0, 0, 0)
-
-	//	Compute the cross product
-	v3_cross.crossVectors(v3_to_center, v3_to_north_pole)
-	v3_cross.normalize()
-
-	//	Angle of the rotation to re-orient 'up'
-	const angle =					v3_to_center.angleTo(v3_to_north_pole)
-
-	//	Quaternion describing the rotation
-	let reorientation_quaternion =	new AFRAME.THREE.Quaternion()
-	reorientation_quaternion.setFromAxisAngle(v3_cross, angle)
-
-	//	Select and create elements
-	const scene =					document.querySelector('a-scene')
-	const racing_graphs =			document.createElement('a-entity')
-	const raw_line =				document.createElement('a-entity')
-
-	//	Place the racing line in the scene
-	racing_graphs.appendChild(raw_line)
-	scene.appendChild(racing_graphs)
-
-	// TODO: Replace with swizzle function to set correct Z?
-	// TODO: This needs to be reworked now that arbitrary laps can be loaded
+	//	Graphs
+	const racing_graphs = document.createElement('a-entity')
 	racing_graphs.object3D.rotation.x += (-90 * (Math.PI / 180))
-	racing_graphs.setAttribute('scale', (scaling_factor + ' ' + scaling_factor + ' ' + scaling_factor))
 	racing_graphs.setAttribute('position', '0.0 1.0 -1.0')
 	racing_graphs.setAttribute('id', 'racing_graphs')
+	scene.appendChild(racing_graphs)
 
-	raw_line.setAttribute('position', '0.0 0.0 -1.0')
-
-	//	Assign the racing line component to the raw and smoother line entities
-	raw_line.setAttribute('racing_line', {
-		coords: '',
-		length: lap_points.length,
-		reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
-	})
-
-	//	Draw raw GPS racing line
-	const grapher = new Worker(new URL('./workers/grapher.js', import.meta.url))
-	let coords: Array<string> | null = null
-	let parsed_message: {
-		command: string,
-		points: Array<Coordinate.Cartesian3D>,
-		index: number,
-	} | null = null
-	let grapher_message = function (event: MessageEvent) {
-		parsed_message = JSON.parse(event.data)
-
-		switch (parsed_message?.command) {
-			case WebWorker.Task.PointsGraphed:
-				coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
-
-				raw_line.setAttribute('racing_line', { streamed_coords: coords.join(', '), streamed_index: parsed_message.index })
-				break
-
-			case WebWorker.Task.Terminate:
-				coords = null
-				parsed_message = null
-
-				grapher.removeEventListener('message', grapher_message)
-
-				//	TODO: Should probably wrap this all up in a big fat promise
-				render_smoothed_line(lap_points, v3_to_center, reorientation_quaternion)
-				break
-		}
-	}
-	grapher.addEventListener('message', grapher_message)
-
-	//	Iteratively feed in the raw coordinates to the graphing worker
-	let loop_index = 0
-	const loop_size = 200
-	const loop_limit = lap_points.length
-
-	const interval_id = window.setInterval(() => {
-		if ((loop_index * loop_size) < loop_limit) {
-			grapher.postMessage(JSON.stringify({
-				command:			WebWorker.Task.GraphPointsBatch,
-				index:				(loop_index * loop_size),
-				path_floor:			'coordinates.cartesian.raw',
-				points:				lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
-				steps:				loop_size,
-				value_function:		util_graphing.line.name,
-			}))
-			loop_index++
-		}
-		else {
-			window.clearInterval(interval_id)
-			grapher.postMessage(JSON.stringify({
-				command:			WebWorker.Task.GraphPointsFinished,
-			}))
-		}
-	}, 1)
+	//	Sessions List
+	views['SessionList'] = new SessionList(document, racing_graphs)
+	views['SessionList'].set_position(0.0, 1.6, -0.25)
+	scene.appendChild(views['SessionList'].root_el)
 }
 
 function render_smoothed_line(lap_points: Array<RacingLinePoint>, up_vector: Coordinate.Cartesian3D, reorientation_quaternion: Coordinate.Quaternion): void {

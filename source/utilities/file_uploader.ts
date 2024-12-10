@@ -28,7 +28,7 @@ function parse_file(worker: Worker, file: File, callback: (session: Log.Session)
 				longitude_eastmost: NaN,
 				longitude_westmost: NaN,
 			},
-			vector_to_center: new Array<number>(),
+			vector_to_center: <Coordinate.Cartesian3D>{ x: NaN, y: NaN, z: NaN },
 			lap_first_point_indexes: new Array<number>(),
 		}
 

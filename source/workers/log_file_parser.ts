@@ -124,16 +124,18 @@ self.addEventListener('message', (event: MessageEvent): void => {
 		})
 
 		//	Vector from the center of the Earth to the center of the bounds
-		const vector_to_center: Array<number> = ecef(
+		const ecef_vector: Array<number> = ecef(
 			((bounds_coords.latitude_northmost + bounds_coords.latitude_southmost) / 2),
 			((bounds_coords.longitude_westmost + bounds_coords.longitude_eastmost) / 2)
 		)
 
+		const vector_to_center: Coordinate.Cartesian3D = { x: ecef_vector[0], y: ecef_vector[1], z: ecef_vector[2] }
+
 		//	Re-center the XYZ points to have the center of the bounded area aligns to { x: 0, y: 0, z: 0 }
 		racing_line_points.forEach((point: RacingLinePoint, index: number): void => {
-			racing_line_points[index].coordinates.cartesian.raw.x -= vector_to_center[0]
-			racing_line_points[index].coordinates.cartesian.raw.y -= vector_to_center[1]
-			racing_line_points[index].coordinates.cartesian.raw.z -= vector_to_center[2]
+			racing_line_points[index].coordinates.cartesian.raw.x -= vector_to_center.x
+			racing_line_points[index].coordinates.cartesian.raw.y -= vector_to_center.y
+			racing_line_points[index].coordinates.cartesian.raw.z -= vector_to_center.z
 		})
 
 		// TODO: Quick and dirty delta smoothing -- move to somewhere better
