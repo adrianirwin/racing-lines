@@ -19,7 +19,7 @@ self.addEventListener('message', (event: MessageEvent): void => {
 	} = JSON.parse(event.data)
 
 	switch (message.command) {
-		case  WebWorker.Task.SmoothPointsFinished:
+		case WebWorker.Task.SmoothPointsFinished:
 			self.postMessage(JSON.stringify({
 				command:			WebWorker.Task.Terminate,
 			}))

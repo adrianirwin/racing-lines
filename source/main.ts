@@ -218,7 +218,7 @@ function render_racing_line(lap_points: Array<RacingLinePoint>, session: Log.Ses
 			case WebWorker.Task.PointsGraphed:
 				coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
 
-				raw_line.setAttribute('racing_line',  { streamed_coords: coords.join(', '), streamed_index: parsed_message.index })
+				raw_line.setAttribute('racing_line', { streamed_coords: coords.join(', '), streamed_index: parsed_message.index })
 				break
 
 			case WebWorker.Task.Terminate:

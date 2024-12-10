@@ -26,7 +26,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SessionList>>('session_list'
 			},
 			stringify: (value: Log.Session): string => {
 				const count = Object.keys(value).length
-				return count + ' session' + (count === 1 ?  '' : 's')
+				return count + ' session' + (count === 1 ? '' : 's')
 			}
 		},
 	},

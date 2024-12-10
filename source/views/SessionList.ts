@@ -6,7 +6,7 @@ import {
 import { View } from './Views'
 import SessionThumbnail from './SessionThumbnail'
 
-export default  class SessionList {
+export default class SessionList {
 	root_el: AFRAME.Entity
 	thumbnails_el: View.SessionThumbnailEntityMap
 
