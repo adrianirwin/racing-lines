@@ -3,14 +3,14 @@ import {
 	Log,
 	RacingLinePoint,
 } from './../models/Logs'
-import LapGraph from './LapGraph'
+import LapGraphs from './LapGraphs'
 
 export default class SessionThumbnail {
 	root_el: AFRAME.Entity
 	session_el: AFRAME.Entity
 	graphs_root_el: AFRAME.Entity
 
-	lap_graphs: Array<LapGraph>
+	lap_graphs: Array<LapGraphs>
 	session: Log.Session
 
 	constructor(document: HTMLDocument, session: Log.Session, graphs_root_el: AFRAME.Entity) {
@@ -49,7 +49,7 @@ export default class SessionThumbnail {
 		//	Lap Boxes
 		const box_size = 0.015
 		const lap_boxes = new Array<AFRAME.Entity>()
-		this.lap_graphs = new Array<LapGraph>()
+		this.lap_graphs = new Array<LapGraphs>()
 		for (let i = 0, l = this.session.total_laps; i < l; i++) {
 			const lap_box = document.createElement('a-plane')
 			lap_boxes[i] = lap_box
@@ -68,7 +68,7 @@ export default class SessionThumbnail {
 					case 'selected':
 						lap_box.setAttribute('color', '#D1002A')
 
-						const lap_graph = new LapGraph(document, this.session.points_for_lap(i + 1), this.session.vector_to_center, 0.01)
+						const lap_graph = new LapGraphs(document, this.session.points_for_lap(i + 1), this.session.vector_to_center, 0.01)
 						this.lap_graphs[i] = lap_graph
 						this.graphs_root_el.appendChild(lap_graph.root_el)
 						break

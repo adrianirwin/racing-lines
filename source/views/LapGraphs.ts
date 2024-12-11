@@ -5,7 +5,7 @@ import { WebWorker } from './../models/Workers'
 import * as util_file_parser from './../utilities/file_parser'
 import * as util_graphing from './../utilities/graphing'
 
-export default class LapGraph {
+export default class LapGraphs {
 	root_el: AFRAME.Entity
 	coordinates_raw_el: AFRAME.Entity
 	coordinates_smooth_el: AFRAME.Entity
