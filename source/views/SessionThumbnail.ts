@@ -133,10 +133,6 @@ export default class SessionThumbnail {
 		})
 	}
 
-	set_position(x: number, y: number, z: number): void {
-		this.root_el.setAttribute('position', x + ' ' + y + ' ' + z)
-	}
-
 	set progress(progress: number) {
 		this.session_el.setAttribute('session_summary', { progress })
 	}

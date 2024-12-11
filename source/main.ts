@@ -152,7 +152,8 @@ function start_vr_scene(): void {
 
 	//	Sessions List
 	views['SessionList'] = new SessionList(document, racing_graphs)
-	views['SessionList'].set_position(0.0, 1.6, -0.25)
+	views['SessionList'].root_el.setAttribute('position', '0.0 1.6 -0.25')
+	views['SessionList'].root_el.setAttribute('id', 'racing_graphs')
 	scene.appendChild(views['SessionList'].root_el)
 }
 
