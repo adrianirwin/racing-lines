@@ -51,7 +51,7 @@ export default class SessionList {
 			const thumbnail_position = ((Object.keys(this.thumbnails_el).length * -0.082) - 0.03)
 
 			const thumbnail = new SessionThumbnail(document, session, this.graphs_root_el)
-			thumbnail.set_position(0.0, thumbnail_position, 0.0)
+			thumbnail.root_el.setAttribute('position', '0.0 ' + thumbnail_position + ' 0.0')
 
 			this.root_el.appendChild(thumbnail.root_el)
 			this.thumbnails_el[session.name] = thumbnail
