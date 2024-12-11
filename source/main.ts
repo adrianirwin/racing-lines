@@ -31,7 +31,6 @@ import './styles/main.scss'
 //	Global State
 const vr_ui_elements = new Array<HTMLElement>()
 const views = <{ [key: string]: any }>{}
-const uploaded_sessions = <State.Sessions>{}
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback: () => void, callback_vr_enter: () => void, callback_vr_exit: () => void): void {
@@ -58,8 +57,6 @@ function start_web_ui(): void {
 }
 
 function allow_file_upload(): void {
-	window.console.log('allow_file_upload')
-
 	util_file_uploader.listen(
 		document.getElementById('file_upload') as HTMLInputElement,
 		new Worker(new URL('./workers/log_file_parser.js', import.meta.url)),
@@ -68,13 +65,7 @@ function allow_file_upload(): void {
 }
 
 function file_finished_loading(session: Log.Session): void {
-	window.console.log('file_finished_loading')
-
-	//	Store in the global state
-	// TODO: For now...
-	uploaded_sessions[session.name] = session
-	views['SessionList'].add_session(document, uploaded_sessions[session.name])
-
+	State.Global.getInstance().add_session(session)
 	allow_file_upload()
 }
 

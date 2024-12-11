@@ -1,15 +1,15 @@
 import * as AFRAME from 'aframe'
-import {
-	Log,
-	RacingLinePoint,
-} from './../models/Logs'
+import { BehaviorSubject, Subject } from 'rxjs'
+import { Log, RacingLinePoint } from './../models/Logs'
+import { State } from './../models/States'
 import { View } from './Views'
 import SessionThumbnail from './SessionThumbnail'
 
 export default class SessionList {
 	root_el: AFRAME.Entity
-	thumbnails_el: View.SessionThumbnailEntityMap
 	graphs_root_el: AFRAME.Entity
+
+	thumbnails: View.SessionThumbnailEntityMap
 
 	constructor(document: HTMLDocument, graphs_root_el: AFRAME.Entity) {
 		this.graphs_root_el = graphs_root_el
@@ -18,16 +18,16 @@ export default class SessionList {
 		this.root_el.setAttribute('position', '0.0 0.0 0.0')
 		this.root_el.setAttribute('session_list', {})
 
-		this.thumbnails_el = <View.SessionThumbnailEntityMap>{}
+		this.thumbnails = <View.SessionThumbnailEntityMap>{}
 
 		const title = document.createElement('a-entity')
 		title.setAttribute('position', '0.0 0.0 0.0')
 		title.setAttribute('text', {
-			'anchor': 'left',
-			'color': '#F2B718',
-			'letterSpacing': 16,
-			'width': 0.3,
-			'value': 'SESSIONS',
+			anchor: 'left',
+			color: '#F2B718',
+			letterSpacing: 16,
+			width: 0.3,
+			value: 'SESSIONS',
 		})
 
 		//	Background
@@ -41,6 +41,25 @@ export default class SessionList {
 
 		this.root_el.appendChild(title)
 		this.root_el.appendChild(box)
+
+		//	Listen to the global state
+		State.Global.getInstance().$sessions.subscribe((sessions: State.Sessions) => {
+			const count = Object.keys(sessions).length
+			if (count > 0) {
+				title.setAttribute('text', { value: 'SESSIONS [' + Object.keys(sessions).length + ']' })
+			}
+			else {
+				title.setAttribute('text', { value: 'SESSIONS' })
+			}
+		})
+
+		State.Global.getInstance().$session_added.subscribe((session: Log.Session) => {
+			this.add_session(document, session)
+		})
+
+		State.Global.getInstance().$session_deleted.subscribe((session: Log.Session) => {
+			this.delete_session(document, session)
+		})
 	}
 
 	set_position(x: number, y: number, z: number): void {
@@ -48,18 +67,37 @@ export default class SessionList {
 	}
 
 	add_session(document: HTMLDocument, session: Log.Session): void {
-		if (this.thumbnails_el[session.name] === undefined) {
-			const thumbnail_position = ((Object.keys(this.thumbnails_el).length * -0.082) - 0.03)
-
-			const thumbnail = new SessionThumbnail(document, session, this.graphs_root_el)
-			thumbnail.root_el.setAttribute('position', '0.0 ' + thumbnail_position + ' 0.0')
-
-			this.root_el.appendChild(thumbnail.root_el)
-			this.thumbnails_el[session.name] = thumbnail
+		if (this.thumbnails[session.name] === undefined) {
+			this.thumbnails[session.name] = new SessionThumbnail(document, session, this.graphs_root_el)
+			this.reflow_thumbnails(session.name)
+			this.root_el.appendChild(this.thumbnails[session.name].root_el)
 		}
 		else {
 			// TODO: Something better than this...
 			console.log('Session already loaded')
+		}
+	}
+
+	delete_session(document: HTMLDocument, session: Log.Session): void {
+		if (this.thumbnails[session.name] !== undefined) {
+			this.root_el.removeChild(this.thumbnails[session.name].root_el)
+			delete this.thumbnails[session.name]
+			this.reflow_thumbnails()
+		}
+		else {
+			// TODO: Something better than this...
+			console.log('Session already deleted')
+		}
+	}
+
+	reflow_thumbnails(name?: string): void {
+		if (name && this.thumbnails[name]) {
+			this.thumbnails[name].root_el.setAttribute('position', '0.0 ' + (((Object.keys(this.thumbnails).length - 1) * -0.082) - 0.03) + ' 0.0')
+		}
+		else {
+			Object.keys(this.thumbnails).forEach((name: string, i: number) => {
+				this.thumbnails[name].root_el.setAttribute('position', '0.0 ' + ((i * -0.082) - 0.03) + ' 0.0')
+			})
 		}
 	}
 }

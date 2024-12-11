@@ -1,8 +1,7 @@
 import * as AFRAME from 'aframe'
-import {
-	Log,
-	RacingLinePoint,
-} from './../models/Logs'
+import { Subject } from 'rxjs'
+import { Log, RacingLinePoint } from './../models/Logs'
+import { State } from './../models/States'
 import LapGraphs from './LapGraphs'
 
 export default class SessionThumbnail {
@@ -13,9 +12,13 @@ export default class SessionThumbnail {
 	lap_graphs: Array<LapGraphs>
 	session: Log.Session
 
+	$delete: Subject<void>
+
 	constructor(document: HTMLDocument, session: Log.Session, graphs_root_el: AFRAME.Entity) {
 		this.session = session
 		this.graphs_root_el = graphs_root_el
+
+		this.$delete = new Subject()
 
 		this.root_el = document.createElement('a-entity')
 		this.root_el.setAttribute('position', '0.0 0.0 0.0')
@@ -29,21 +32,21 @@ export default class SessionThumbnail {
 		const name = document.createElement('a-entity')
 		name.setAttribute('position', '0.0 0.0 0.0')
 		name.setAttribute('text', {
-			'width': 0.35,
-			'anchor': 'left',
-			'color': '#F2B718',
-			'value': this.session.name,
+			width: 0.35,
+			anchor: 'left',
+			color: '#F2B718',
+			value: this.session.name,
 		})
 
 		//	LAPS [##]
 		const laps = document.createElement('a-entity')
 		laps.setAttribute('position', '0.0012 -0.017 0.0')
 		laps.setAttribute('text', {
-			'width': 0.3,
-			'anchor': 'left',
-			'color': '#D1002A',
-			'font': 'monoid',
-			'value': 'LAPS [' + this.session.total_laps + ']',
+			width: 0.3,
+			anchor: 'left',
+			color: '#D1002A',
+			font: 'monoid',
+			value: 'LAPS [' + this.session.total_laps + ']',
 		})
 
 		//	Lap Boxes
@@ -105,12 +108,12 @@ export default class SessionThumbnail {
 			lap_time.setAttribute('position', '0.001 -0.002 0.003')
 			lap_time.setAttribute('rotation', '-21.35 -23.93 -27.80')
 			lap_time.setAttribute('text', {
-				'width': 0.15,
-				'anchor': 'left',
-				'color': '#FFFFFF',
-				'font': 'kelsonsans',
-				'letterSpacing': 2.0,
-				'value': this.session.time_for_lap_formatted(i + 1)
+				width: 0.15,
+				anchor: 'left',
+				color: '#FFFFFF',
+				font: 'kelsonsans',
+				letterSpacing: 2.0,
+				value: this.session.time_for_lap_formatted(i + 1)
 			})
 
 			lap_box.appendChild(lap_time)
@@ -128,8 +131,7 @@ export default class SessionThumbnail {
 		close_box.setAttribute('side', 'double')
 		close_box.classList.add('raycastable')
 		close_box.addEventListener('click', (e: Event) => {
-			// TODO: Broadcast the event
-			this.root_el.parentElement?.removeChild(this.root_el)
+			State.Global.getInstance().delete_session(this.session)
 		})
 		close_box.addEventListener('stateadded', (e: any) => {
 			switch (e.detail) {
