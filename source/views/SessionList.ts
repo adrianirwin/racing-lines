@@ -37,6 +37,7 @@ export default class SessionList {
 		box.setAttribute('height', 0.02)
 		box.setAttribute('color', '#262626')
 		box.setAttribute('roughness', 1.0)
+		box.setAttribute('side', 'double')
 
 		this.root_el.appendChild(title)
 		this.root_el.appendChild(box)

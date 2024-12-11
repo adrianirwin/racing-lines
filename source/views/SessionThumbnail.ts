@@ -85,14 +85,16 @@ export default class SessionThumbnail {
 				}
 			})
 
+			//	Lap Time
 			const lap_time = document.createElement('a-entity')
-			lap_time.setAttribute('position', '-0.003 -0.01 0.003')
-			lap_time.setAttribute('rotation', '-40.0 -20.0 -40.0')
+			lap_time.setAttribute('position', '0.001 -0.002 0.003')
+			lap_time.setAttribute('rotation', '-21.35 -23.93 -27.80')
 			lap_time.setAttribute('text', {
-				'width': 0.20,
+				'width': 0.15,
 				'anchor': 'left',
-				'color': '#ABABAB',
-				'font': 'sourcecodepro',
+				'color': '#FFFFFF',
+				'font': 'kelsonsans',
+				'letterSpacing': 2.0,
 				'value': this.session.time_for_lap_formatted(i + 1)
 			})
 
@@ -108,6 +110,7 @@ export default class SessionThumbnail {
 		box.setAttribute('height', 0.075)
 		box.setAttribute('color', '#262626')
 		box.setAttribute('roughness', 1.0)
+		box.setAttribute('side', 'double')
 
 		//	Assemble the elements
 		this.root_el.appendChild(this.session_el)
