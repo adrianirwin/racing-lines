@@ -57,15 +57,14 @@ export default class SessionThumbnail {
 			lap_box.setAttribute('position', (((box_size + 0.005) * i) + 0.01) + ' -0.038 0.0')
 			lap_box.setAttribute('width', box_size)
 			lap_box.setAttribute('height', box_size)
-			lap_box.setAttribute('color', '#383838')
+			lap_box.setAttribute('color', '#292929')
 			lap_box.setAttribute('roughness', 1.0)
-			lap_box.classList.add('raycastable')
-
-			//	Click Handling
-			lap_box.addEventListener('click', (e: Event) => lap_box.is('selected') === true ? lap_box.removeState('selected') : lap_box.addState('selected'))
 
 			lap_box.addEventListener('stateadded', (e: any) => {
 				switch (e.detail) {
+					case 'smoothed':
+						lap_box.setAttribute('color', '#383838')
+						break
 					case 'selected':
 						lap_box.setAttribute('color', '#D1002A')
 
@@ -104,6 +103,19 @@ export default class SessionThumbnail {
 
 		//	Smoothing progerss bar
 		this.session.$smoothing_progress.subscribe((progress: number) => this.progress = progress)
+
+		//	As smoothing is completed, enable interactions
+		this.session.$smoothed_up_to_lap.subscribe((lap: number) => {
+			if (lap > 0) {
+				for (let i_l = 0, l_l = lap; i_l < l_l; i_l++) {
+					if (lap_boxes[i_l].is('smoothed') === false) {
+						lap_boxes[i_l].addState('smoothed')
+						lap_boxes[i_l].classList.add('raycastable')
+						lap_boxes[i_l].addEventListener('click', (e: Event) => lap_boxes[i_l].is('selected') === true ? lap_boxes[i_l].removeState('selected') : lap_boxes[i_l].addState('selected'))
+					}
+				}
+			}
+		})
 	}
 
 	set_position(x: number, y: number, z: number): void {

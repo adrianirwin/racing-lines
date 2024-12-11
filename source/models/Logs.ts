@@ -18,6 +18,7 @@ export namespace Log {
 
 	export class Session implements File, ParsedValues {
 		$smoothing_progress: BehaviorSubject<number>
+		$smoothed_up_to_lap: BehaviorSubject<number>
 
 		//	Log.File
 		name: string
@@ -31,6 +32,7 @@ export namespace Log {
 
 		constructor(file: File, parsed_values: ParsedValues) {
 			this.$smoothing_progress = new BehaviorSubject(0.0)
+			this.$smoothed_up_to_lap = new BehaviorSubject(0)
 
 			this.last_modified = file.last_modified
 			this.name = file.name
@@ -59,8 +61,6 @@ export namespace Log {
 		}
 
 		smooth_cartesian_coords(): void {
-
-			//	Smooth GPS values
 			const worker = new Worker(new URL('./../workers/smoother.js', import.meta.url))
 			const points_l = this.points.length
 
@@ -85,6 +85,9 @@ export namespace Log {
 						}
 
 						this.$smoothing_progress.next(parsed_message.index / points_l)
+						this.$smoothed_up_to_lap.next(
+							this.lap_first_point_indexes.findLastIndex((lap_first_point_index: number) => (parsed_message?.index ?? 0) > lap_first_point_index)
+						)
 						break
 
 					case WebWorker.Task.Terminate:
@@ -94,7 +97,9 @@ export namespace Log {
 						worker.removeEventListener('message', worker_message)
 
 						this.$smoothing_progress.next(1.0)
+						this.$smoothed_up_to_lap.next(this.total_laps)
 						this.$smoothing_progress.complete()
+						this.$smoothed_up_to_lap.complete()
 						break
 				}
 			}

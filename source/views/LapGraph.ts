@@ -8,6 +8,7 @@ import * as util_graphing from './../utilities/graphing'
 export default class LapGraph {
 	root_el: AFRAME.Entity
 	coordinates_raw_el: AFRAME.Entity
+	coordinates_smooth_el: AFRAME.Entity
 
 	lap_points: Array<RacingLinePoint>
 	vector_to_center: Coordinate.Cartesian3D
@@ -42,23 +43,41 @@ export default class LapGraph {
 		this.root_el.setAttribute('position', '0.0 0.0 0.0')
 
 		this.coordinates_raw_el = document.createElement('a-entity')
+		this.coordinates_raw_el.setAttribute('position', '0.0 0.0 -0.005')
 		this.coordinates_raw_el.setAttribute('scale', this.scaling_factor + ' ' + this.scaling_factor + ' ' + this.scaling_factor)
 		this.coordinates_raw_el.setAttribute('racing_line', {
+			colour: '#D1002A',
+			coords: '',
+			length: lap_points.length,
+			reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
+		})
+
+		this.coordinates_smooth_el = document.createElement('a-entity')
+		this.coordinates_smooth_el.setAttribute('position', '0.0 0.0 0.0')
+		this.coordinates_smooth_el.setAttribute('scale', this.scaling_factor + ' ' + this.scaling_factor + ' ' + this.scaling_factor)
+		this.coordinates_smooth_el.setAttribute('racing_line', {
+			colour: '#FF66FF',
 			coords: '',
 			length: lap_points.length,
 			reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
 		})
 
 		this.root_el.appendChild(this.coordinates_raw_el)
+		this.root_el.appendChild(this.coordinates_smooth_el)
 
-		this.draw_coordinates_raw(lap_points)
+		this.draw_line(lap_points, 'coordinates.cartesian.raw', this.coordinates_raw_el)
+
+		// TODO: Check for availability of the smoothed points
+		window.setTimeout(() => {
+			this.draw_line(lap_points, 'coordinates.cartesian.smoothed', this.coordinates_smooth_el)
+		}, 250)
 
 		//	TODO: Should probably wrap this all up in a big fat promise
 		// render_smoothed_line(lap_points, v3_to_center, reorientation_quaternion)
 		// this.draw_coordinates_smooth(document, lap_points, vector_to_center, 0.1)
 	}
 
-	draw_coordinates_raw(lap_points: Array<RacingLinePoint>): void {
+	draw_line(lap_points: Array<RacingLinePoint>, source_path: string, target_el: AFRAME.Entity): void {
 		//	Instantiate a new worker
 		const grapher = new Worker(new URL('./../workers/grapher.js', import.meta.url))
 
@@ -76,7 +95,7 @@ export default class LapGraph {
 				case WebWorker.Task.PointsGraphed:
 					coords = parsed_message.points.map(AFRAME.utils.coordinates.stringify)
 
-					this.coordinates_raw_el.setAttribute('racing_line', { streamed_coords: coords.join(', '), streamed_index: parsed_message.index })
+					target_el.setAttribute('racing_line', { streamed_coords: coords.join(', '), streamed_index: parsed_message.index })
 					break
 
 				case WebWorker.Task.Terminate:
@@ -99,7 +118,7 @@ export default class LapGraph {
 				grapher.postMessage(JSON.stringify({
 					command:			WebWorker.Task.GraphPointsBatch,
 					index:				(loop_index * loop_size),
-					path_floor:			'coordinates.cartesian.raw',
+					path_floor:			source_path,
 					points:				lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
 					steps:				loop_size,
 					value_function:		util_graphing.line.name,
