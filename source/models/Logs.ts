@@ -60,6 +60,24 @@ export namespace Log {
 			return new Array<RacingLinePoint>()
 		}
 
+		time_for_lap(lap_number: number): number {
+			if (lap_number > 0 && lap_number <= this.lap_first_point_indexes.length) {
+				return this.points[(this.lap_first_point_indexes[lap_number] ?? this.points.length) - 1].timing.utc - this.points[this.lap_first_point_indexes[lap_number - 1]].timing.utc
+			}
+			return NaN
+		}
+
+		time_for_lap_formatted(lap_number: number): string {
+			const milliseconds = this.time_for_lap(lap_number)
+
+			const totalSeconds = Math.floor(milliseconds / 1000);
+			const hours = Math.floor(totalSeconds / 3600);
+			const minutes = Math.floor((totalSeconds % 3600) / 60);
+			const seconds = totalSeconds % 60;
+
+			return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0') + '.' + String(milliseconds).slice(-3).padStart(3, '0')
+		}
+
 		smooth_cartesian_coords(): void {
 			const worker = new Worker(new URL('./../workers/smoother.js', import.meta.url))
 			const points_l = this.points.length

@@ -22,7 +22,7 @@ export default class SessionThumbnail {
 
 		//	Progress Bar
 		this.session_el = document.createElement('a-entity')
-		this.session_el.setAttribute('position', '0.0 -0.054 0.0')
+		this.session_el.setAttribute('position', '0.0 -0.032 0.0')
 		this.session_el.setAttribute('session_summary', { session: this.session, progress_bar_scale: 0.3 })
 
 		//	Session Name.log
@@ -51,10 +51,10 @@ export default class SessionThumbnail {
 		const lap_boxes = new Array<AFRAME.Entity>()
 		this.lap_graphs = new Array<LapGraphs>()
 		for (let i = 0, l = this.session.total_laps; i < l; i++) {
-			const lap_box = document.createElement('a-plane')
-			lap_boxes[i] = lap_box
+			const lap_box_offset = (((box_size + 0.005) * i) + 0.01)
 
-			lap_box.setAttribute('position', (((box_size + 0.005) * i) + 0.01) + ' -0.038 0.0')
+			const lap_box = document.createElement('a-plane')
+			lap_box.setAttribute('position', lap_box_offset + ' -0.0485 0.0')
 			lap_box.setAttribute('width', box_size)
 			lap_box.setAttribute('height', box_size)
 			lap_box.setAttribute('color', '#292929')
@@ -84,6 +84,21 @@ export default class SessionThumbnail {
 						break
 				}
 			})
+
+			const lap_time = document.createElement('a-entity')
+			lap_time.setAttribute('position', '-0.003 -0.01 0.003')
+			lap_time.setAttribute('rotation', '-40.0 -20.0 -40.0')
+			lap_time.setAttribute('text', {
+				'width': 0.20,
+				'anchor': 'left',
+				'color': '#ABABAB',
+				'font': 'sourcecodepro',
+				'value': this.session.time_for_lap_formatted(i + 1)
+			})
+
+			lap_box.appendChild(lap_time)
+
+			lap_boxes[i] = lap_box
 		}
 
 		//	Background
