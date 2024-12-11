@@ -62,6 +62,11 @@ export default class SessionThumbnail {
 
 			lap_box.addEventListener('stateadded', (e: any) => {
 				switch (e.detail) {
+					case 'cursor-hovered':
+						if (lap_box.is('smoothed') === true && lap_box.is('selected') === false) {
+							lap_box.setAttribute('color', '#590D0D')
+						}
+						break
 					case 'smoothed':
 						lap_box.setAttribute('color', '#383838')
 						break
@@ -77,8 +82,18 @@ export default class SessionThumbnail {
 
 			lap_box.addEventListener('stateremoved', (e: any) => {
 				switch (e.detail) {
+					case 'cursor-hovered':
+						if (lap_box.is('smoothed') === true && lap_box.is('selected') === false) {
+							lap_box.setAttribute('color', '#383838')
+						}
+						break
 					case 'selected':
-						lap_box.setAttribute('color', '#383838')
+						if (lap_box.is('cursor-hovered') === true) {
+							lap_box.setAttribute('color', '#590D0D')
+						}
+						else {
+							lap_box.setAttribute('color', '#383838')
+						}
 
 						this.lap_graphs[i].root_el.parentElement?.removeChild(this.lap_graphs[i].root_el)
 						break
@@ -103,6 +118,35 @@ export default class SessionThumbnail {
 			lap_boxes[i] = lap_box
 		}
 
+		//	Unload Button
+		const close_box = document.createElement('a-plane')
+		close_box.setAttribute('position', '-0.028 0.000 -0.0025')
+		close_box.setAttribute('width', 0.025)
+		close_box.setAttribute('height', 0.025)
+		close_box.setAttribute('color', '#262626')
+		close_box.setAttribute('roughness', 1.0)
+		close_box.setAttribute('side', 'double')
+		close_box.classList.add('raycastable')
+		close_box.addEventListener('click', (e: Event) => {
+			// TODO: Broadcast the event
+			this.root_el.parentElement?.removeChild(this.root_el)
+		})
+		close_box.addEventListener('stateadded', (e: any) => {
+			switch (e.detail) {
+				case 'cursor-hovered':
+					close_box.setAttribute('color', '#590D0D')
+					break
+			}
+		})
+
+		close_box.addEventListener('stateremoved', (e: any) => {
+			switch (e.detail) {
+				case 'cursor-hovered':
+					close_box.setAttribute('color', '#262626')
+					break
+			}
+		})
+
 		//	Background
 		const box = document.createElement('a-plane')
 		box.setAttribute('position', '0.15 -0.025 -0.0025')
@@ -117,6 +161,7 @@ export default class SessionThumbnail {
 		this.root_el.appendChild(name)
 		this.root_el.appendChild(laps)
 		lap_boxes.forEach((lap_box: AFRAME.Entity) => this.root_el.appendChild(lap_box))
+		this.root_el.appendChild(close_box)
 		this.root_el.appendChild(box)
 
 		//	Smoothing progerss bar
@@ -129,7 +174,9 @@ export default class SessionThumbnail {
 					if (lap_boxes[i_l].is('smoothed') === false) {
 						lap_boxes[i_l].addState('smoothed')
 						lap_boxes[i_l].classList.add('raycastable')
-						lap_boxes[i_l].addEventListener('click', (e: Event) => lap_boxes[i_l].is('selected') === true ? lap_boxes[i_l].removeState('selected') : lap_boxes[i_l].addState('selected'))
+						lap_boxes[i_l].addEventListener('click', (e: Event) => {
+							lap_boxes[i_l].is('selected') === true ? lap_boxes[i_l].removeState('selected') : lap_boxes[i_l].addState('selected')
+						})
 					}
 				}
 			}
