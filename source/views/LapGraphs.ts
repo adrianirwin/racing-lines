@@ -42,6 +42,7 @@ export default class LapGraphs {
 		this.root_el = document.createElement('a-entity')
 		this.root_el.setAttribute('position', '0.0 0.0 0.0')
 
+		//	Raw coordinates
 		this.coordinates_raw_el = document.createElement('a-entity')
 		this.coordinates_raw_el.setAttribute('position', '0.0 0.0 -0.005')
 		this.coordinates_raw_el.setAttribute('scale', this.scaling_factor + ' ' + this.scaling_factor + ' ' + this.scaling_factor)
@@ -52,6 +53,7 @@ export default class LapGraphs {
 			reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
 		})
 
+		//	Smoothed coordinates
 		this.coordinates_smooth_el = document.createElement('a-entity')
 		this.coordinates_smooth_el.setAttribute('position', '0.0 0.0 0.0')
 		this.coordinates_smooth_el.setAttribute('scale', this.scaling_factor + ' ' + this.scaling_factor + ' ' + this.scaling_factor)
@@ -62,23 +64,18 @@ export default class LapGraphs {
 			reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
 		})
 
+		//	Assemble the elements
 		this.root_el.appendChild(this.coordinates_raw_el)
 		this.root_el.appendChild(this.coordinates_smooth_el)
 
+		//	Draw the lines
 		this.draw_line(lap_points, 'coordinates.cartesian.raw', this.coordinates_raw_el)
-
-		// TODO: Check for availability of the smoothed points
 		window.setTimeout(() => {
 			this.draw_line(lap_points, 'coordinates.cartesian.smoothed', this.coordinates_smooth_el)
 		}, 250)
-
-		//	TODO: Should probably wrap this all up in a big fat promise
-		// render_smoothed_line(lap_points, v3_to_center, reorientation_quaternion)
-		// this.draw_coordinates_smooth(document, lap_points, vector_to_center, 0.1)
 	}
 
 	draw_line(lap_points: Array<RacingLinePoint>, source_path: string, target_el: AFRAME.Entity): void {
-		//	Instantiate a new worker
 		const grapher = new Worker(new URL('./../workers/grapher.js', import.meta.url))
 
 		//	Draw raw GPS racing line
