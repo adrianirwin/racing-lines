@@ -1,8 +1,8 @@
 import * as AFRAME from 'aframe'
+import * as ecef from 'geodetic-to-ecef'
 import { RacingLinePoint } from './../models/Logs'
 import { Coordinate } from './../models/Geometry'
 import { WebWorker } from './../models/Workers'
-import * as util_file_parser from './../utilities/file_parser'
 import * as util_graphing from './../utilities/graphing'
 
 export default class LapGraphs {
@@ -24,17 +24,18 @@ export default class LapGraphs {
 		//	 - to the center of the track bounds in earth space
 		//	 - to the north pole ('up') in earth space
 		//	 - cross product along which to rotate to translate from one to the other
-		const v3_to_center =			new AFRAME.THREE.Vector3(vector_to_center.x, vector_to_center.y, vector_to_center.z)
-		const vector_to_north_pole =	util_file_parser.vector_to_north_pole()
-		const v3_to_north_pole =		new AFRAME.THREE.Vector3(vector_to_north_pole.x, vector_to_north_pole.y, vector_to_north_pole.z)
-		const v3_cross =				new AFRAME.THREE.Vector3(0, 0, 0)
+		const ecef_vector: Array<number> = ecef(90, 0)
+		const vector_to_north_pole = { x: ecef_vector[0], y: ecef_vector[1], z: ecef_vector[2] }
+		const v3_to_north_pole = new AFRAME.THREE.Vector3(vector_to_north_pole.x, vector_to_north_pole.y, vector_to_north_pole.z)
 
 		//	Compute the cross product
+		const v3_cross = new AFRAME.THREE.Vector3(0, 0, 0)
+		const v3_to_center = new AFRAME.THREE.Vector3(vector_to_center.x, vector_to_center.y, vector_to_center.z)
 		v3_cross.crossVectors(v3_to_center, v3_to_north_pole)
 		v3_cross.normalize()
 
 		//	Angle of the rotation to re-orient 'up'
-		const angle =					v3_to_center.angleTo(v3_to_north_pole)
+		const angle = v3_to_center.angleTo(v3_to_north_pole)
 
 		//	Quaternion describing the rotation
 		const reorientation_quaternion = new AFRAME.THREE.Quaternion()
@@ -51,7 +52,7 @@ export default class LapGraphs {
 			colour: '#D1002A',
 			coords: '',
 			length: lap_points.length,
-			reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
+			reorientation_quaternion: this.vector_to_string(reorientation_quaternion),
 		})
 
 		//	Smoothed coordinates
@@ -62,7 +63,7 @@ export default class LapGraphs {
 			colour: '#FF66FF',
 			coords: '',
 			length: lap_points.length,
-			reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
+			reorientation_quaternion: this.vector_to_string(reorientation_quaternion),
 		})
 
 		//	Speed
@@ -72,12 +73,12 @@ export default class LapGraphs {
 		this.speed_el.setAttribute('line_graph', {
 			coords: '',
 			length: lap_points.length,
-			reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
+			reorientation_quaternion: this.vector_to_string(reorientation_quaternion),
 		})
 		this.speed_el.setAttribute('filled_graph', {
 			coords: '',
 			length: lap_points.length,
-			reorientation_quaternion: util_file_parser.vector_to_string(reorientation_quaternion),
+			reorientation_quaternion: this.vector_to_string(reorientation_quaternion),
 		})
 
 		//	Assemble the elements
@@ -93,6 +94,23 @@ export default class LapGraphs {
 				this.draw_delta_graph(lap_points, 'coordinates.cartesian.smoothed', 'performance.speed', 'delta.speed', this.speed_el, v3_to_center, 0.5)
 			}, 150)
 		}, 150)
+	}
+
+	vector_to_string(coordinate: Coordinate.Quaternion): string {
+		const strings = new Array<string>()
+		if (coordinate.x) {
+			strings.push(String(coordinate.x))
+		}
+		if (coordinate.y) {
+			strings.push(String(coordinate.y))
+		}
+		if (coordinate.z) {
+			strings.push(String(coordinate.z))
+		}
+		if (coordinate.w) {
+			strings.push(String(coordinate.w))
+		}
+		return strings.join(', ')
 	}
 
 	draw_line(

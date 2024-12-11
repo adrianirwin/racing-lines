@@ -9,7 +9,6 @@ import {
 } from './models/Logs'
 import { State } from './models/States'
 import { WebWorker } from './models/Workers'
-import * as util_file_parser from './utilities/file_parser'
 import * as util_file_uploader from './utilities/file_uploader'
 import * as util_graphing from './utilities/graphing'
 
