@@ -138,39 +138,6 @@ self.addEventListener('message', (event: MessageEvent): void => {
 			racing_line_points[index].coordinates.cartesian.raw.z -= vector_to_center.z
 		})
 
-		// TODO: Quick and dirty delta smoothing -- move to somewhere better
-		racing_line_points.forEach((point: RacingLinePoint, index: number): void => {
-
-			// TODO: Fix this get/|| mess for handling NaN/null values
-			const surrounding_values = [
-				(get(racing_line_points[(index - 8)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index - 7)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index - 6)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index - 5)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index - 4)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index - 3)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index - 2)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index - 1)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 0)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 1)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 2)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 3)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 4)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 5)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 6)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 7)], 'delta.speed', 0) || 0),
-				(get(racing_line_points[(index + 8)], 'delta.speed', 0) || 0),
-			]
-
-			const total = surrounding_values.reduce((accumulator: number, current: number): number => {
-				return accumulator + current
-			}, 0)
-
-			const average = total / 17
-
-			racing_line_points[index].delta.speed = average
-		})
-
 		//	Remove the '0' boundary
 		lap_first_point_indexes.splice(0, 1)
 

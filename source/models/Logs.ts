@@ -42,7 +42,8 @@ export namespace Log {
 			this.points = parsed_values.points
 			this.vector_to_center = parsed_values.vector_to_center
 
-			this.smooth_cartesian_coords()
+			this.smooth_deltas(20)
+			this.smooth_cartesian_coords([320, 160, 80, 40, 20], [0.03, 0.07, 0.9])
 		}
 
 		get total_laps(): number {
@@ -78,8 +79,8 @@ export namespace Log {
 			return String(minutes) + ':' + String(seconds).padStart(2, '0') + '.' + String(milliseconds).slice(-3).padStart(3, '0')
 		}
 
-		smooth_cartesian_coords(): void {
-			const worker = new Worker(new URL('./../workers/smoother.js', import.meta.url))
+		smooth_cartesian_coords(group_sizes: Array<number>, group_weights: Array<number>): void {
+			const worker = new Worker(new URL('./../workers/cartesian_coords_smoother.js', import.meta.url))
 			const points_l = this.points.length
 
 			let smoothed_coords: Array<string> | null = null
@@ -131,12 +132,12 @@ export namespace Log {
 				if ((send_i * step) < points_l) {
 					worker.postMessage(JSON.stringify({
 						command:			WebWorker.Task.SmoothPointsBatch,
-						bounds:				[320, 160, 80, 40, 20],
+						bounds:				group_sizes,
 						index:				(send_i * step),
-						points:				this.points.slice(Math.max(((send_i * step) - 320), 0), (((send_i + 1) * step) + 320)),
-						start_offset:		Math.min((send_i * step), 320),
+						points:				this.points.slice(Math.max(((send_i * step) - group_sizes[0]), 0), (((send_i + 1) * step) + group_sizes[0])),
+						start_offset:		Math.min((send_i * step), group_sizes[0]),
 						steps:				step,
-						weights:			[0.03, 0.07, 0.9],
+						weights:			group_weights,
 					}))
 					send_i++
 				}
@@ -147,7 +148,19 @@ export namespace Log {
 					}))
 				}
 			}, 1)
+		}
 
+		smooth_deltas(averaged_across: number): void {
+			// TODO: Implement similar smoothing algorithm as the cartesian coords?
+			const total_average_count = (averaged_across * 2 + 1)
+			const surrounding_values = new Array<number>()
+			this.points.forEach((point: RacingLinePoint, point_index: number): void => {
+				for (let i = 0, l = total_average_count; i < l; i++) {
+					surrounding_values[i] = this.points[(point_index + i - averaged_across)]?.delta.speed ?? 0
+				}
+
+				this.points[point_index].delta.speed = surrounding_values.reduce((accumulator: number, current: number): number => accumulator + current, 0) / total_average_count
+			})
 		}
 	}
 }
