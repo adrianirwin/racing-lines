@@ -6,7 +6,6 @@ import { Global } from './../models/Globals'
 import { Log } from './../models/Logs'
 import { State } from './../models/States'
 import { WebWorker } from './../models/Workers'
-import * as util_graphing from './../utilities/graphing'
 
 export default class LapGraphs {
 	root_el: AFRAME.Entity
@@ -171,7 +170,7 @@ export default class LapGraphs {
 					path_floor:			source_path,
 					points:				lap_points.slice((loop_index * loop_size), ((loop_index + 1) * loop_size)),
 					steps:				loop_size,
-					value_function:		util_graphing.line.name,
+					value_function:		'line',
 				}))
 				loop_index++
 			}
@@ -262,7 +261,7 @@ export default class LapGraphs {
 					offset_vector_coords:	{ x: up_vector.x, y: up_vector.y, z: up_vector.z },
 					scale:					scale,
 					steps:					loop_size,
-					value_function:			util_graphing.delta_fill.name,
+					value_function:			'delta_fill',
 				}))
 				loop_index++
 			}
