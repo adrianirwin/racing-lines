@@ -50,6 +50,7 @@ export default class SessionThumbnail {
 		})
 
 		//	Lap Boxes
+		const fastest_lap = session.fastest_lap
 		const box_size = 0.015
 		const lap_boxes = new Array<AFRAME.Entity>()
 		this.lap_graphs = new Array<LapGraphs>()
@@ -110,7 +111,7 @@ export default class SessionThumbnail {
 			lap_time.setAttribute('text', {
 				width: 0.15,
 				anchor: 'left',
-				color: '#FFFFFF',
+				color: ((i + 1) === fastest_lap) ? '#06D5FE' : '#FFFFFF',
 				font: 'kelsonsans',
 				letterSpacing: 2.0,
 				value: this.session.time_for_lap_formatted(i + 1)

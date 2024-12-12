@@ -42,12 +42,28 @@ export namespace Log {
 			this.points = parsed_values.points
 			this.vector_to_center = parsed_values.vector_to_center
 
+			//	Reduce the GPS sensor caused noise
 			this.smooth_deltas(20)
 			this.smooth_cartesian_coords([320, 160, 80, 40, 20], [0.03, 0.07, 0.9])
 		}
 
 		get total_laps(): number {
 			return this.lap_first_point_indexes.length
+		}
+
+		// TODO: Need to check that it's **actually** a full lap, currently ignores the final lap...
+		get fastest_lap(): number {
+			let fastest_lap = 1
+			let best_lap_time = this.time_for_lap(1)
+			let curr_lap_time = this.time_for_lap(1)
+			for (let i = 1, l = this.total_laps; i < l; i++) {
+				curr_lap_time = this.time_for_lap(i)
+				if (curr_lap_time < best_lap_time) {
+					fastest_lap = i
+					best_lap_time = curr_lap_time
+				}
+			}
+			return fastest_lap
 		}
 
 		//	1-based convenience method to get the points for a lap
