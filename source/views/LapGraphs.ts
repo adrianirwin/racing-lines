@@ -2,6 +2,7 @@ import * as AFRAME from 'aframe'
 import * as ecef from 'geodetic-to-ecef'
 import { RacingLinePoint } from './../models/Logs'
 import { Coordinate } from './../models/Geometry'
+import { Global } from './../models/Globals'
 import { Log } from './../models/Logs'
 import { State } from './../models/States'
 import { WebWorker } from './../models/Workers'
@@ -100,7 +101,7 @@ export default class LapGraphs {
 		}, 150)
 
 		//	Listen to the global state
-		State.Global.getInstance().$session_deleted.subscribe((session: Log.Session) => {
+		Global.State.$session_deleted.subscribe((session: Log.Session) => {
 			if (session.name === this.session_name) {
 				this.root_el.parentElement?.removeChild(this.root_el)
 			}

@@ -7,25 +7,17 @@ export namespace State {
 	}
 
 	export class Global {
-		private static instance: Global
 		$session_added: Subject<Log.Session>
 		$session_deleted: Subject<Log.Session>
 		$sessions: BehaviorSubject<Sessions>
 
-		private constructor() {
+		constructor() {
 			this.$session_added = new Subject<Log.Session>()
 			this.$session_deleted = new Subject<Log.Session>()
 			this.$sessions = new BehaviorSubject<Sessions>({} as Sessions)
 		}
 
-		public static getInstance(): Global {
-			if (!Global.instance) {
-				Global.instance = new Global()
-			}
-			return Global.instance
-		}
-
-		public add_session(session: Log.Session): boolean {
+		add_session(session: Log.Session): boolean {
 			const sessions = this.$sessions.getValue()
 			if (sessions[session.name] === undefined) {
 				sessions[session.name] = session
@@ -36,7 +28,7 @@ export namespace State {
 			return false
 		}
 
-		public delete_session(session: Log.Session): boolean {
+		delete_session(session: Log.Session): boolean {
 			const sessions = this.$sessions.getValue()
 			if (sessions[session.name] !== undefined) {
 				delete sessions[session.name]

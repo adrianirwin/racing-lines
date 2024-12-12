@@ -1,5 +1,6 @@
 import * as AFRAME from 'aframe'
 import { Subject } from 'rxjs'
+import { Global } from './../models/Globals'
 import { Log, RacingLinePoint } from './../models/Logs'
 import { State } from './../models/States'
 import LapGraphs from './LapGraphs'
@@ -132,7 +133,7 @@ export default class SessionThumbnail {
 		close_box.setAttribute('side', 'double')
 		close_box.classList.add('raycastable')
 		close_box.addEventListener('click', (e: Event) => {
-			State.Global.getInstance().delete_session(this.session)
+			Global.State.delete_session(this.session)
 		})
 		close_box.addEventListener('stateadded', (e: any) => {
 			switch (e.detail) {

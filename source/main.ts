@@ -1,4 +1,5 @@
 import * as AFRAME from 'aframe'
+import { Global } from './models/Globals'
 import { Log } from './models/Logs'
 import { State } from './models/States'
 import * as util_file_uploader from './utilities/file_uploader'
@@ -98,7 +99,7 @@ function allow_file_upload(): void {
 }
 
 function file_finished_loading(session: Log.Session): void {
-	State.Global.getInstance().add_session(session)
+	Global.State.add_session(session)
 	allow_file_upload()
 }
 

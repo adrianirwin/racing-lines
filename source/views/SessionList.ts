@@ -1,5 +1,6 @@
 import * as AFRAME from 'aframe'
 import { BehaviorSubject, Subject } from 'rxjs'
+import { Global } from './../models/Globals'
 import { Log, RacingLinePoint } from './../models/Logs'
 import { State } from './../models/States'
 import { View } from './Views'
@@ -43,7 +44,7 @@ export default class SessionList {
 		this.root_el.appendChild(box)
 
 		//	Listen to the global state
-		State.Global.getInstance().$sessions.subscribe((sessions: State.Sessions) => {
+		Global.State.$sessions.subscribe((sessions: State.Sessions) => {
 			const count = Object.keys(sessions).length
 			if (count > 0) {
 				title.setAttribute('text', { value: 'SESSIONS [' + Object.keys(sessions).length + ']' })
@@ -53,11 +54,11 @@ export default class SessionList {
 			}
 		})
 
-		State.Global.getInstance().$session_added.subscribe((session: Log.Session) => {
+		Global.State.$session_added.subscribe((session: Log.Session) => {
 			this.add_session(document, session)
 		})
 
-		State.Global.getInstance().$session_deleted.subscribe((session: Log.Session) => {
+		Global.State.$session_deleted.subscribe((session: Log.Session) => {
 			this.delete_session(document, session)
 		})
 	}
