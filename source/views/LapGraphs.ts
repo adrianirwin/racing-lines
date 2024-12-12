@@ -2,6 +2,8 @@ import * as AFRAME from 'aframe'
 import * as ecef from 'geodetic-to-ecef'
 import { RacingLinePoint } from './../models/Logs'
 import { Coordinate } from './../models/Geometry'
+import { Log } from './../models/Logs'
+import { State } from './../models/States'
 import { WebWorker } from './../models/Workers'
 import * as util_graphing from './../utilities/graphing'
 
@@ -14,11 +16,13 @@ export default class LapGraphs {
 	lap_points: Array<RacingLinePoint>
 	vector_to_center: Coordinate.Cartesian3D
 	scaling_factor: number
+	session_name: string
 
-	constructor(document: HTMLDocument, lap_points: Array<RacingLinePoint>, vector_to_center: Coordinate.Cartesian3D, scaling_factor: number) {
+	constructor(document: HTMLDocument, session_name: string, lap_points: Array<RacingLinePoint>, vector_to_center: Coordinate.Cartesian3D, scaling_factor: number) {
 		this.lap_points = lap_points
 		this.vector_to_center = vector_to_center
 		this.scaling_factor = scaling_factor
+		this.session_name = session_name
 
 		//	Three significant vectors
 		//	 - to the center of the track bounds in earth space
@@ -94,6 +98,13 @@ export default class LapGraphs {
 				this.draw_delta_graph(lap_points, 'coordinates.cartesian.smoothed', 'performance.speed', 'delta.speed', this.speed_el, v3_to_center, 0.5)
 			}, 150)
 		}, 150)
+
+		//	Listen to the global state
+		State.Global.getInstance().$session_deleted.subscribe((session: Log.Session) => {
+			if (session.name === this.session_name) {
+				this.root_el.parentElement?.removeChild(this.root_el)
+			}
+		})
 	}
 
 	vector_to_string(coordinate: Coordinate.Quaternion): string {

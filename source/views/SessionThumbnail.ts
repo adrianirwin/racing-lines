@@ -76,7 +76,7 @@ export default class SessionThumbnail {
 					case 'selected':
 						lap_box.setAttribute('color', '#D1002A')
 
-						const lap_graph = new LapGraphs(document, this.session.points_for_lap(i + 1), this.session.vector_to_center, 0.01)
+						const lap_graph = new LapGraphs(document, this.session.name, this.session.points_for_lap(i + 1), this.session.vector_to_center, 0.01)
 						this.lap_graphs[i] = lap_graph
 						this.graphs_root_el.appendChild(lap_graph.root_el)
 						break
