@@ -26,23 +26,20 @@ const views = <{ [key: string]: any }>{}
 
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback_create_ui: () => void, callback_vr_enter: () => void, callback_vr_exit: () => void): void {
-	// $('body').append('<a-scene stats background="color: #353638">')
-	$('body').append('<a-scene background="color: #353638">')
-	$('a-scene').on('loaded', callback_create_ui)
+	const scene = document.createElement('a-scene') as AFRAME.Scene
+	scene.setAttribute('renderer', 'physicallyCorrectLights: true;')
+	scene.setAttribute('background', 'color: #353638')
+	document.body.appendChild(scene)
 
-	if (callback_vr_enter) {
-		$('a-scene').on('enter-vr', callback_vr_enter)
-
-		if (callback_vr_exit) {
-			$('a-scene').on('exit-vr', callback_vr_exit)
-		}
-	}
+	scene.addEventListener('loaded', callback_create_ui)
+	scene.addEventListener('enter-vr', callback_vr_enter)
+	scene.addEventListener('exit-vr', callback_vr_exit)
 }
 
 function create_ui(): void {
 	allow_file_upload()
 
-	const scene = document.querySelector('a-scene')
+	const scene = document.querySelector('a-scene') as AFRAME.Scene
 	scene.setAttribute('cursor', 'rayOrigin: mouse; fuse: false')
 	scene.setAttribute('raycaster', 'objects: .raycastable')
 
@@ -129,6 +126,4 @@ function exit_vr_ui(): void {
 }
 
 //	Start the Application
-$(document).ready(function() {
-	start_aframe(create_ui, start_vr_ui, exit_vr_ui)
-})
+document.addEventListener('DOMContentLoaded', () => start_aframe(create_ui, start_vr_ui, exit_vr_ui), false)

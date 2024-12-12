@@ -11,7 +11,6 @@
 		"aframe": "^1.6.0",
 		"babel-preset-env": "^0.0.0",
 		"geodetic-to-ecef": "^1.2.0",
-		"jquery": "^3.7.1",
 		"lodash": "^4.17.21",
 		"papaparse": "^5.4.1",
 		"rxjs": "^7.8.1"
@@ -19,7 +18,6 @@
 	"devDependencies": {
 		"@babel/core": "^7",
 		"@types/aframe": "^1.2.7",
-		"@types/jquery": "^3.5.32",
 		"@types/lodash": "^4.17.13",
 		"babelify": "^10",
 		"copy-webpack-plugin": "^12.0.2",
