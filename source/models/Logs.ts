@@ -16,7 +16,17 @@ export namespace Log {
 		vector_to_center: Coordinate.Cartesian3D
 	}
 
-	export class Session implements File, ParsedValues {
+	export interface AnalyzedLap {
+		max_speed: number
+		max_speed_index: number
+	}
+
+	export interface AnalyzedLaps {
+		fastest_lap: number
+		analyzed_laps: Array<AnalyzedLap>
+	}
+
+	export class Session implements File, ParsedValues, AnalyzedLaps {
 		$smoothing_progress: BehaviorSubject<number>
 		$smoothed_up_to_lap: BehaviorSubject<number>
 
@@ -30,6 +40,9 @@ export namespace Log {
 		points: Array<RacingLinePoint>
 		vector_to_center: Coordinate.Cartesian3D
 
+		//	AnalyzedLaps
+		analyzed_laps: Array<AnalyzedLap>
+
 		constructor(file: File, parsed_values: ParsedValues) {
 			this.$smoothing_progress = new BehaviorSubject(0.0)
 			this.$smoothed_up_to_lap = new BehaviorSubject(0)
@@ -42,6 +55,9 @@ export namespace Log {
 			this.points = parsed_values.points
 			this.vector_to_center = parsed_values.vector_to_center
 
+			// TODO: Needs a better name
+			this.analyzed_laps = this.analyze_laps()
+
 			//	Reduce the GPS sensor caused noise
 			this.smooth_deltas(20)
 			this.smooth_cartesian_coords([320, 160, 80, 40, 20], [0.03, 0.07, 0.9])
@@ -51,6 +67,7 @@ export namespace Log {
 			return this.lap_first_point_indexes.length
 		}
 
+		//	AnalyzedLaps
 		// TODO: Need to check that it's **actually** a full lap, currently ignores the final lap...
 		get fastest_lap(): number {
 			let fastest_lap = 1
@@ -64,6 +81,29 @@ export namespace Log {
 				}
 			}
 			return fastest_lap
+		}
+
+		analyze_laps(): Array<AnalyzedLap> {
+			const laps = new Array<AnalyzedLap>()
+
+			for (let lap_i = 1, lap_l = this.lap_first_point_indexes.length; lap_i - 1 < lap_l; lap_i++) {
+				const analyzed_lap = <AnalyzedLap>{
+					max_speed: 0,
+					max_speed_index: 0,
+				}
+
+				const points = this.points_for_lap(lap_i)
+				points.forEach((point: RacingLinePoint, index: number) => {
+					if (point.performance.speed > analyzed_lap.max_speed) {
+						analyzed_lap.max_speed = point.performance.speed
+						analyzed_lap.max_speed_index = index
+					}
+				})
+
+				laps[lap_i] = analyzed_lap
+			}
+
+			return laps
 		}
 
 		//	1-based convenience method to get the points for a lap
