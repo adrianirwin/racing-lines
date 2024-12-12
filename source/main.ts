@@ -1,16 +1,7 @@
 import * as AFRAME from 'aframe'
-import get from 'lodash/get'
-import isNull from 'lodash/isNull'
-import set from 'lodash/set'
-import { Coordinate } from './models/Geometry'
-import {
-	Log,
-	RacingLinePoint,
-} from './models/Logs'
+import { Log } from './models/Logs'
 import { State } from './models/States'
-import { WebWorker } from './models/Workers'
 import * as util_file_uploader from './utilities/file_uploader'
-import * as util_graphing from './utilities/graphing'
 
 //	Views
 import SessionList from './views/SessionList'
@@ -40,10 +31,10 @@ function start_aframe(callback: () => void, callback_vr_enter: () => void, callb
 	$('body').append('<a-scene background="color: #353638">')
 	$('a-scene').on('loaded', callback)
 
-	if (isNull(callback_vr_enter) === false) {
+	if (callback_vr_enter) {
 		$('a-scene').on('enter-vr', callback_vr_enter)
 
-		if (isNull(callback_vr_exit) === false) {
+		if (callback_vr_exit) {
 			$('a-scene').on('exit-vr', callback_vr_exit)
 		}
 	}
