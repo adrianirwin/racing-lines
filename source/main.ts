@@ -24,12 +24,10 @@ const vr_ui_elements = new Array<HTMLElement>()
 const views = <{ [key: string]: any }>{}
 
 //	Add A-Frame's <a-scene> to start the scene
-function start_aframe(callback: () => void, callback_vr_enter: () => void, callback_vr_exit: () => void): void {
-	window.console.log('start_aframe')
-
+function start_aframe(callback_create_ui: () => void, callback_vr_enter: () => void, callback_vr_exit: () => void): void {
 	// $('body').append('<a-scene stats background="color: #353638">')
 	$('body').append('<a-scene background="color: #353638">')
-	$('a-scene').on('loaded', callback)
+	$('a-scene').on('loaded', callback_create_ui)
 
 	if (callback_vr_enter) {
 		$('a-scene').on('enter-vr', callback_vr_enter)
@@ -40,56 +38,8 @@ function start_aframe(callback: () => void, callback_vr_enter: () => void, callb
 	}
 }
 
-function start_web_ui(): void {
-	window.console.log('start_web_ui')
-
+function create_ui(): void {
 	allow_file_upload()
-	start_vr_scene()
-}
-
-function allow_file_upload(): void {
-	util_file_uploader.listen(
-		document.getElementById('file_upload') as HTMLInputElement,
-		new Worker(new URL('./workers/log_file_parser.js', import.meta.url)),
-		file_finished_loading,
-	)
-}
-
-function file_finished_loading(session: Log.Session): void {
-	State.Global.getInstance().add_session(session)
-	allow_file_upload()
-}
-
-function start_vr_ui(): void {
-	window.console.log('start_vr_ui')
-
-	const camera = document.querySelector('a-entity[camera]')
-
-	// const text = document.createElement('a-entity')
-	// text.setAttribute('position', '0.04 0 -0.5')
-	// text.setAttribute('text', {
-	// 	'width': 0.2,
-	// 	'anchor': 'center',
-	// 	'color': 'rgb(240, 240, 255)',
-	// 	'value': 'HUD - Coming Soon'
-	// })
-	// camera.appendChild(text)
-
-	// vr_ui_elements.push(text)
-}
-
-function exit_vr_ui(): void {
-	window.console.log('exit_vr_ui')
-
-	//	Remove UI elements only shown in VR
-	while(vr_ui_elements.length > 0) {
-		let element = vr_ui_elements.pop()
-		element?.parentNode?.removeChild(element)
-	}
-}
-
-function start_vr_scene(): void {
-	window.console.log('start_vr_scene')
 
 	const scene = document.querySelector('a-scene')
 	scene.setAttribute('cursor', 'rayOrigin: mouse; fuse: false')
@@ -139,7 +89,45 @@ function start_vr_scene(): void {
 	scene.appendChild(views['SessionList'].root_el)
 }
 
+function allow_file_upload(): void {
+	util_file_uploader.listen(
+		document.getElementById('file_upload') as HTMLInputElement,
+		new Worker(new URL('./workers/log_file_parser.js', import.meta.url)),
+		file_finished_loading,
+	)
+}
+
+function file_finished_loading(session: Log.Session): void {
+	State.Global.getInstance().add_session(session)
+	allow_file_upload()
+}
+
+function start_vr_ui(): void {
+	//	Add VR-only UI elements
+	const camera = document.querySelector('a-entity[camera]')
+
+	// const text = document.createElement('a-entity')
+	// text.setAttribute('position', '0.04 0 -0.5')
+	// text.setAttribute('text', {
+	// 	'width': 0.2,
+	// 	'anchor': 'center',
+	// 	'color': 'rgb(240, 240, 255)',
+	// 	'value': 'HUD - Coming Soon'
+	// })
+	// camera.appendChild(text)
+
+	// vr_ui_elements.push(text)
+}
+
+function exit_vr_ui(): void {
+	//	Remove VR-only UI elements
+	while(vr_ui_elements.length > 0) {
+		let element = vr_ui_elements.pop()
+		element?.parentNode?.removeChild(element)
+	}
+}
+
 //	Start the Application
 $(document).ready(function() {
-	start_aframe(start_web_ui, start_vr_ui, exit_vr_ui)
+	start_aframe(create_ui, start_vr_ui, exit_vr_ui)
 })
