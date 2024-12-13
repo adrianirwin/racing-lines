@@ -39,8 +39,8 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<LineGraph>>('line_graph', {
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		streamed_coords: {
 			type: 'string', default: '',
@@ -49,11 +49,11 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<LineGraph>>('line_graph', {
 			type: 'number', default: 0,
 		},
 		length: {
-			type: 'number', default: 0
+			type: 'number', default: 0,
 		},
 		reorientation_quaternion: {
-			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0}
-		}
+			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0},
+		},
 	},
 
 	init: function () {

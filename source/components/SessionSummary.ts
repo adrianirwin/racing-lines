@@ -46,7 +46,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SessionSummary>>('session_su
 					return value.name
 				}
 				return 'no session'
-			}
+			},
 		},
 	},
 

@@ -1,6 +1,6 @@
 // AFRAME.registerComponent('grabbable', {
 // 	schema: {
-// 		hand: {type: 'selector', default: '#left_hand'}
+// 		hand: {type: 'selector', default: '#left_hand'},
 // 	},
 
 // 	init: () => {

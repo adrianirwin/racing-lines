@@ -35,8 +35,8 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		coords1: {
 			parse: (value: string) => {
@@ -46,8 +46,8 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		coords2: {
 			parse: (value: string) => {
@@ -57,8 +57,8 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		coords3: {
 			parse: (value: string) => {
@@ -68,8 +68,8 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		coords4: {
 			parse: (value: string) => {
@@ -79,8 +79,8 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		coords5: {
 			parse: (value: string) => {
@@ -90,12 +90,12 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<SmoothingInspector>>('smooth
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		reorientation_quaternion: {
 			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0}
-		}
+		},
 	},
 
 	init: function () {

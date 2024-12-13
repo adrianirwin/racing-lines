@@ -30,7 +30,7 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<GroundPlane>>('ground_plane'
 		},
 		size: {
 			type: 'number', default: 0.5
-		}
+		},
 	},
 
 	init: function () {

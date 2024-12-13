@@ -30,12 +30,12 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<RacingDots>>('racing_dots', 
 				{x:  1, y: 0, z:  0},
 				{x: -1, y: 0, z:  0},
 				{x:  0, y: 0, z:  1},
-				{x:  0, y: 0, z: -1}
-			]
+				{x:  0, y: 0, z: -1},
+			],
 		},
 		reorientation_quaternion: {
-			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0}
-		}
+			type: 'vec4', default: {x: 0, y: 0, z: 0, w: 0},
+		},
 	},
 
 	init: function () {
