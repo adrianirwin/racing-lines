@@ -12,16 +12,17 @@ export default class LapGraphs {
 	coordinates_raw_el: AFRAME.Entity
 	coordinates_smooth_el: AFRAME.Entity
 	speed_el: AFRAME.Entity
+	max_speed_el: AFRAME.Entity
 
 	lap_points: Array<RacingLinePoint>
+	lap_analysis: Log.AnalyzedLap
 	vector_to_center: Coordinate.Cartesian3D
-	scaling_factor: number
 	session_name: string
 
-	constructor(document: HTMLDocument, session_name: string, lap_points: Array<RacingLinePoint>, vector_to_center: Coordinate.Cartesian3D, scaling_factor: number) {
+	constructor(document: HTMLDocument, session_name: string, lap_points: Array<RacingLinePoint>, lap_analysis: Log.AnalyzedLap, vector_to_center: Coordinate.Cartesian3D) {
 		this.lap_points = lap_points
+		this.lap_analysis = lap_analysis
 		this.vector_to_center = vector_to_center
-		this.scaling_factor = scaling_factor
 		this.session_name = session_name
 
 		//	Three significant vectors
@@ -51,7 +52,7 @@ export default class LapGraphs {
 		//	Raw coordinates
 		this.coordinates_raw_el = document.createElement('a-entity')
 		this.coordinates_raw_el.setAttribute('position', '0.0 0.0 -0.005')
-		this.coordinates_raw_el.setAttribute('scale', this.scaling_factor + ' ' + this.scaling_factor + ' ' + this.scaling_factor)
+		this.coordinates_raw_el.setAttribute('scale', Global.Config.world_to_local_scale + ' ' + Global.Config.world_to_local_scale + ' ' + Global.Config.world_to_local_scale)
 		this.coordinates_raw_el.setAttribute('racing_line', {
 			colour: '#D1002A',
 			coords: '',
@@ -62,7 +63,7 @@ export default class LapGraphs {
 		//	Smoothed coordinates
 		this.coordinates_smooth_el = document.createElement('a-entity')
 		this.coordinates_smooth_el.setAttribute('position', '0.0 0.0 0.0')
-		this.coordinates_smooth_el.setAttribute('scale', this.scaling_factor + ' ' + this.scaling_factor + ' ' + this.scaling_factor)
+		this.coordinates_smooth_el.setAttribute('scale', Global.Config.world_to_local_scale + ' ' + Global.Config.world_to_local_scale + ' ' + Global.Config.world_to_local_scale)
 		this.coordinates_smooth_el.setAttribute('racing_line', {
 			colour: '#FF66FF',
 			coords: '',
@@ -73,7 +74,7 @@ export default class LapGraphs {
 		//	Speed
 		this.speed_el = document.createElement('a-entity')
 		this.speed_el.setAttribute('position', '0.0 0.0 0.0')
-		this.speed_el.setAttribute('scale', this.scaling_factor + ' ' + this.scaling_factor + ' ' + this.scaling_factor)
+		this.speed_el.setAttribute('scale', Global.Config.world_to_local_scale + ' ' + Global.Config.world_to_local_scale + ' ' + Global.Config.world_to_local_scale)
 		this.speed_el.setAttribute('line_graph', {
 			coords: '',
 			length: lap_points.length,
@@ -85,17 +86,37 @@ export default class LapGraphs {
 			reorientation_quaternion: this.vector_to_string(reorientation_quaternion),
 		})
 
+		//	Max Speed
+		// TODO: Rotate to look at the camera (e.g. https://github.com/supermedium/superframe/tree/master/components/look-at/)
+		this.max_speed_el = document.createElement('a-entity')
+		this.max_speed_el.setAttribute('position', '0.0 0.0 0.0')
+		this.max_speed_el.setAttribute('rotation', '90.0 0.0 0.0')
+		this.max_speed_el.setAttribute('flag_pole', {})
+		this.max_speed_el.setAttribute('text', {
+			width: 0.35,
+			align: 'center',
+			anchor: 'center',
+			baseline: 'bottom',
+			color: '#F2B718',
+			value: lap_analysis.max_speed,
+		})
+		this.max_speed_el.setAttribute('visible', false)
+
 		//	Assemble the elements
 		this.root_el.appendChild(this.coordinates_raw_el)
 		this.root_el.appendChild(this.coordinates_smooth_el)
 		this.root_el.appendChild(this.speed_el)
+		this.root_el.appendChild(this.max_speed_el)
 
 		//	Draw the lines
-		this.draw_line(lap_points, 'coordinates.cartesian.raw', this.coordinates_raw_el)
+		this.draw_line(this.coordinates_raw_el, this.lap_points, 'coordinates.cartesian.raw')
 		window.setTimeout(() => {
-			this.draw_line(lap_points, 'coordinates.cartesian.smoothed', this.coordinates_smooth_el)
+			this.draw_line(this.coordinates_smooth_el, this.lap_points, 'coordinates.cartesian.smoothed')
 			window.setTimeout(() => {
-				this.draw_delta_graph(lap_points, 'coordinates.cartesian.smoothed', 'performance.speed', 'delta.speed', this.speed_el, v3_to_center, 0.5)
+				this.draw_delta_graph(this.speed_el, this.lap_points, 'coordinates.cartesian.smoothed', 'performance.speed', 'delta.speed', v3_to_center, 0.5)
+				window.setTimeout(() => {
+					this.position_max_speed_flag(this.max_speed_el, this.lap_points, this.lap_analysis, reorientation_quaternion, v3_to_center, 0.5)
+				}, 150)
 			}, 150)
 		}, 150)
 
@@ -125,9 +146,9 @@ export default class LapGraphs {
 	}
 
 	draw_line(
+		target_el: AFRAME.Entity,
 		lap_points: Array<RacingLinePoint>,
 		source_path: string,
-		target_el: AFRAME.Entity,
 	): void {
 		const grapher = new Worker(new URL('./../workers/grapher.js', import.meta.url))
 
@@ -184,11 +205,11 @@ export default class LapGraphs {
 	}
 
 	draw_delta_graph(
+		target_el: AFRAME.Entity,
 		lap_points: Array<RacingLinePoint>,
 		source_path_floor: string,
 		source_path_value: string,
 		source_path_delta: string,
-		target_el: AFRAME.Entity,
 		up_vector: Coordinate.Cartesian3D,
 		scale: number,
 	): void {
@@ -272,5 +293,32 @@ export default class LapGraphs {
 				}))
 			}
 		}, 1)
+	}
+
+	position_max_speed_flag(
+		target_el: AFRAME.Entity,
+		lap_points: Array<RacingLinePoint>,
+		lap_analysis: Log.AnalyzedLap,
+		reorientation_quaternion: AFRAME.THREE.Quaternion,
+		up_vector: Coordinate.Cartesian3D,
+		scale: number,
+	): void {
+		const coords: Coordinate.Cartesian3D = lap_points[lap_analysis.max_speed_index].coordinates.cartesian.smoothed
+
+		const rotation_matrix = new AFRAME.THREE.Matrix4()
+		rotation_matrix.makeRotationFromQuaternion(reorientation_quaternion)
+
+		const offset_vec3 = new AFRAME.THREE.Vector3(up_vector.x, up_vector.y, up_vector.z).normalize()
+		offset_vec3.applyMatrix4(rotation_matrix)
+		offset_vec3.multiplyScalar((lap_analysis.max_speed * scale * Global.Config.world_to_local_scale))
+
+		const coords_vec3 = new AFRAME.THREE.Vector3(coords.x, coords.y, coords.z)
+		coords_vec3.applyMatrix4(rotation_matrix)
+		coords_vec3.multiplyScalar(Global.Config.world_to_local_scale)
+
+		coords_vec3.add(offset_vec3)
+
+		target_el.setAttribute('position', coords_vec3.x + ' ' + coords_vec3.y + ' ' + (coords_vec3.z + 0.05))
+		target_el.setAttribute('visible', true)
 	}
 }

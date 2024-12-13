@@ -9,6 +9,7 @@ import SessionList from './views/SessionList'
 
 //	A-Frame Components
 import './components/FilledGraph'
+import './components/FlagPole'
 import './components/GroundPlane'
 import './components/LineGraph'
 import './components/RacingDots'
@@ -27,8 +28,9 @@ const views = <{ [key: string]: any }>{}
 //	Add A-Frame's <a-scene> to start the scene
 function start_aframe(callback_create_ui: () => void, callback_vr_enter: () => void, callback_vr_exit: () => void): void {
 	const scene = document.createElement('a-scene') as AFRAME.Scene
-	scene.setAttribute('renderer', 'physicallyCorrectLights: true;')
+	scene.setAttribute('renderer', 'foveationLevel: 0; highRefreshRate: true; physicallyCorrectLights: true;')
 	scene.setAttribute('background', 'color: #353638')
+	// scene.setAttribute('stats', '')
 	document.body.appendChild(scene)
 
 	scene.addEventListener('loaded', callback_create_ui)
