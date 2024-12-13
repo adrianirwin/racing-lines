@@ -27,10 +27,10 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FlagPole>>('flag_pole', {
 			type: 'color', default: '#F2B718'
 		},
 		gap: {
-			type: 'number', default: 0.01,
+			type: 'number', default: 0.005,
 		},
 		height: {
-			type: 'number', default: 0.025,
+			type: 'number', default: 0.05,
 		},
 		width: {
 			type: 'number', default: 0.025,
