@@ -49,14 +49,14 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FlagPole>>('flag_pole', {
 		//	Flag Pole Geometry
 		self.data.flag_geometry = new AFRAME.THREE.BufferGeometry()
 		self.data.flag_geometry.setAttribute('position', new AFRAME.THREE.BufferAttribute(new Float32Array([
-			0.0, (self.data.gap * -1), 0.0,
-			0.0, (self.data.height * -1), 0.0,
+			(self.data.width / 2), ((self.data.gap * -1) + self.data.height), 0.0,
+			(self.data.width / -2), ((self.data.gap * -1) + self.data.height), 0.0,
 		]), 3))
 
 		self.data.pole_geometry = new AFRAME.THREE.BufferGeometry()
 		self.data.pole_geometry.setAttribute('position', new AFRAME.THREE.BufferAttribute(new Float32Array([
-			(self.data.width / 2), (self.data.gap * -1), 0.0,
-			(self.data.width / -2), (self.data.gap * -1), 0.0,
+			0.0, 0.0, 0.0,
+			0.0, ((self.data.gap * -1) + self.data.height), 0.0,
 		]), 3))
 
 		self.el.setObject3D('flag', new AFRAME.THREE.Line(self.data.flag_geometry, material))
@@ -68,5 +68,5 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FlagPole>>('flag_pole', {
 
 		self.el.removeObject3D('flag')
 		self.el.removeObject3D('pole')
-	}
+	},
 })

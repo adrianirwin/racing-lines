@@ -1,4 +1,5 @@
 import * as AFRAME from 'aframe'
+require('aframe-look-at-component')
 import { Global } from './models/Globals'
 import { Log } from './models/Logs'
 import { State } from './models/States'
@@ -9,6 +10,7 @@ import SessionList from './views/SessionList'
 
 //	A-Frame Components
 import './components/FilledGraph'
+import './components/FixedSize'
 import './components/FlagPole'
 import './components/GroundPlane'
 import './components/LineGraph'

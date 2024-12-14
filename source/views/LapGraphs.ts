@@ -13,6 +13,7 @@ export default class LapGraphs {
 	coordinates_smooth_el: AFRAME.Entity
 	speed_el: AFRAME.Entity
 	max_speed_el: AFRAME.Entity
+	max_speed_text_el: AFRAME.Entity
 
 	lap_points: Array<RacingLinePoint>
 	lap_analysis: Log.AnalyzedLap
@@ -92,17 +93,25 @@ export default class LapGraphs {
 		this.max_speed_el.setAttribute('position', '0.0 0.0 0.0')
 		this.max_speed_el.setAttribute('rotation', '90.0 0.0 0.0')
 		this.max_speed_el.setAttribute('flag_pole', {})
-		this.max_speed_el.setAttribute('text', {
+		this.max_speed_el.setAttribute('look-at', '[camera]')
+
+		this.max_speed_text_el = document.createElement('a-entity')
+		this.max_speed_text_el.setAttribute('position', '0.0 0.05 0.0')
+		this.max_speed_text_el.setAttribute('text', {
 			width: 0.35,
+			font: 'kelsonsans',
+			letterSpacing: 2.0,
 			align: 'center',
 			anchor: 'center',
 			baseline: 'bottom',
 			color: '#F2B718',
 			value: lap_analysis.max_speed,
 		})
+		this.max_speed_text_el.setAttribute('fixed_size', { scaling_factor: 1 })
 		this.max_speed_el.setAttribute('visible', false)
 
 		//	Assemble the elements
+		this.max_speed_el.appendChild(this.max_speed_text_el)
 		this.root_el.appendChild(this.coordinates_raw_el)
 		this.root_el.appendChild(this.coordinates_smooth_el)
 		this.root_el.appendChild(this.speed_el)
@@ -318,7 +327,7 @@ export default class LapGraphs {
 
 		coords_vec3.add(offset_vec3)
 
-		target_el.setAttribute('position', coords_vec3.x + ' ' + coords_vec3.y + ' ' + (coords_vec3.z + 0.05))
+		target_el.setAttribute('position', coords_vec3.x + ' ' + coords_vec3.y + ' ' + coords_vec3.z)
 		target_el.setAttribute('visible', true)
 	}
 }

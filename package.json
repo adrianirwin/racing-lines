@@ -9,6 +9,7 @@
 		"@types/papaparse": "^5.3.15",
 		"@types/three": "^0.170.0",
 		"aframe": "^1.6.0",
+		"aframe-look-at-component": "^1.0.0",
 		"babel-preset-env": "^0.0.0",
 		"geodetic-to-ecef": "^1.2.0",
 		"lodash": "^4.17.21",
