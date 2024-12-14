@@ -278,5 +278,5 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FilledGraph>>('filled_graph'
 		const self = this as unknown as AFRAME.Component<FilledGraphData>
 
 		self.el.removeObject3D('racing_line')
-	}
+	},
 })
