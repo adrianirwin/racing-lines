@@ -56,7 +56,7 @@ function create_ui(): void {
 
 	//	Ground Plane Grid
 	const ground_plane = document.createElement('a-entity')
-	ground_plane.setAttribute('ground_plane', {'count': 150, 'gap': 1, 'size': 0.025})
+	ground_plane.setAttribute('ground_plane', { count: 150, gap: 1, size: 0.025})
 	ground_plane.setAttribute('position', '0 -1.5 0')
 	scene.appendChild(ground_plane)
 
@@ -65,9 +65,9 @@ function create_ui(): void {
 	const hand_controls_left: AFRAME.Entity = document.createElement('a-entity')
 	const hand_controls_right: AFRAME.Entity = document.createElement('a-entity')
 
-	hand_controls_left.setAttribute('oculus-touch-controls', {'hand': 'left'})
+	hand_controls_left.setAttribute('oculus-touch-controls', { hand: 'left' })
 	// hand_controls_left.setAttribute('hand-controls', 'left')
-	hand_controls_right.setAttribute('oculus-touch-controls', {'hand': 'right'})
+	hand_controls_right.setAttribute('oculus-touch-controls', { hand: 'right' })
 	// hand_controls_right.setAttribute('hand-controls', 'right')
 	hand_controls_left.setAttribute('id', 'left_hand')
 	hand_controls_right.setAttribute('id', 'right_hand')
