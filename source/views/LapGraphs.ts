@@ -105,7 +105,7 @@ export default class LapGraphs {
 			anchor: 'center',
 			baseline: 'bottom',
 			color: '#F2B718',
-			value: lap_analysis.max_speed,
+			value: Number(lap_analysis.max_speed).toFixed(2),
 		})
 		this.max_speed_text_el.setAttribute('fixed_size', { scaling_factor: 1 })
 		this.max_speed_el.setAttribute('visible', false)
