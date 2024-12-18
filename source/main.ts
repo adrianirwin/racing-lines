@@ -35,6 +35,13 @@ function start_aframe(callback_create_ui: () => void, callback_vr_enter: () => v
 	// scene.setAttribute('stats', '')
 	document.body.appendChild(scene)
 
+	const camera: AFRAME.Entity = document.createElement('a-entity')
+	camera.setAttribute('camera', {})
+	camera.setAttribute('position', '0 1.6 0')
+	camera.setAttribute('wasd-controls', { acceleration: 10 })
+	camera.setAttribute('look-controls', {})
+	scene.appendChild(camera)
+
 	scene.addEventListener('loaded', callback_create_ui)
 	scene.addEventListener('enter-vr', callback_vr_enter)
 	scene.addEventListener('exit-vr', callback_vr_exit)
