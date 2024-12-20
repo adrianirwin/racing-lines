@@ -6,7 +6,10 @@ import { Coordinate } from './../models/Geometry'
 import { Schema } from './../models/Components'
 
 interface FlagPoleSchema {
+	align: Schema.String
 	colour: Schema.Colour
+	gap_max: Schema.Number
+	gap_min: Schema.Number
 	limit_max: Schema.Number
 	limit_min: Schema.Number
 	width_max: Schema.Number
@@ -18,7 +21,6 @@ interface FlagPoleData extends Schema.ToData<FlagPoleSchema> {
 	camera_vec: AFRAME.THREE.Vector3
 	distance: number
 	flag_geometry: AFRAME.THREE.BufferGeometry
-	gap: number
 	height: number
 	pole_geometry: AFRAME.THREE.BufferGeometry
 	self_vec: AFRAME.THREE.Vector3
@@ -30,11 +32,17 @@ interface FlagPole {
 
 AFRAME.registerComponent<AFRAME.ComponentDefinition<FlagPole>>('flag_pole', {
 	schema: {
+		align: {
+			type: 'string', default: 'center',
+		},
 		colour: {
 			type: 'color', default: '#F2B718'
 		},
-		gap: {
-			type: 'number', default: 0.005,
+		gap_max: {
+			type: 'number', default: 0.03,
+		},
+		gap_min: {
+			type: 'number', default: 0.003,
 		},
 		height: {
 			type: 'number', default: 0.05,
@@ -46,10 +54,10 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FlagPole>>('flag_pole', {
 			type: 'number', default: 0.5,
 		},
 		width_max: {
-			type: 'number', default: 0.25,
+			type: 'number', default: 0.225,
 		},
 		width_min: {
-			type: 'number', default: 0.025,
+			type: 'number', default: 0.0225,
 		},
 	},
 
@@ -70,14 +78,14 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FlagPole>>('flag_pole', {
 		//	Flag Pole Geometry
 		self.data.flag_geometry = new AFRAME.THREE.BufferGeometry()
 		self.data.flag_geometry.setAttribute('position', new AFRAME.THREE.BufferAttribute(new Float32Array([
-			0.0, ((self.data.gap * -1) + self.data.height), 0.0,
-			0.0, ((self.data.gap * -1) + self.data.height), 0.0,
+			0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0,
 		]), 3))
 
 		self.data.pole_geometry = new AFRAME.THREE.BufferGeometry()
 		self.data.pole_geometry.setAttribute('position', new AFRAME.THREE.BufferAttribute(new Float32Array([
 			0.0, 0.0, 0.0,
-			0.0, ((self.data.gap * -1) + self.data.height), 0.0,
+			0.0, 0.0, 0.0,
 		]), 3))
 
 		self.el.setObject3D('flag', new AFRAME.THREE.Line(self.data.flag_geometry, material))
@@ -97,23 +105,54 @@ AFRAME.registerComponent<AFRAME.ComponentDefinition<FlagPole>>('flag_pole', {
 		self.data.camera_el.object3D.getWorldPosition(self.data.camera_vec)
 		self.el.object3D.getWorldPosition(self.data.self_vec)
 
-		self.data.distance = self.data.self_vec.distanceTo(self.data.camera_vec)
+		const distance = self.data.self_vec.distanceTo(self.data.camera_vec)
 
-		let width = 0.0
+		if (distance !== self.data.distance) {
+			 self.data.distance = distance
 
-		if (self.data.distance > self.data.limit_max) {
-			width = self.data.width_max
-		}
-		else if (self.data.distance < self.data.limit_min) {
-			width = self.data.width_min
-		}
-		else {
-			width = ((self.data.distance - self.data.limit_min) / ((self.data.limit_max - self.data.limit_min) / (self.data.width_max - self.data.width_min))) + self.data.width_min
-		}
+			let gap = 0.0
+			let width = 0.0
 
-		const position = self.data.flag_geometry.getAttribute('position')
-		position.array[0] = width / 2
-		position.array[3] = width / -2
-		self.data.flag_geometry.attributes.position.needsUpdate = true
+			if (self.data.distance > self.data.limit_max) {
+				gap = self.data.gap_max
+				width = self.data.width_max
+			}
+			else if (self.data.distance < self.data.limit_min) {
+				gap = self.data.gap_min
+				width = self.data.width_min
+			}
+			else {
+				gap = ((self.data.distance - self.data.limit_min) / ((self.data.limit_max - self.data.limit_min) / (self.data.gap_max - self.data.gap_min))) + self.data.gap_min
+				width = ((self.data.distance - self.data.limit_min) / ((self.data.limit_max - self.data.limit_min) / (self.data.width_max - self.data.width_min))) + self.data.width_min
+			}
+
+			const flag_geometry_position = self.data.flag_geometry.getAttribute('position')
+			const pole_geometry_position = self.data.pole_geometry.getAttribute('position')
+
+			switch (self.data.align) {
+				case 'left':
+					flag_geometry_position.array[0] = 0
+					flag_geometry_position.array[3] = width * -1
+					pole_geometry_position.array[3] = width / -2
+					break
+				case 'right':
+					flag_geometry_position.array[0] = width
+					flag_geometry_position.array[3] = 0
+					pole_geometry_position.array[3] = width / 2
+					break
+				case 'center':
+				default:
+					flag_geometry_position.array[0] = width / 2
+					flag_geometry_position.array[3] = width / -2
+					break
+			}
+			
+			flag_geometry_position.array[1] = self.data.height - gap
+			flag_geometry_position.array[4] = self.data.height - gap
+			pole_geometry_position.array[4] = self.data.height - gap
+
+			self.data.flag_geometry.attributes.position.needsUpdate = true
+			self.data.pole_geometry.attributes.position.needsUpdate = true
+		}
 	},
 })

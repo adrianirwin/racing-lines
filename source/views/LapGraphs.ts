@@ -92,7 +92,7 @@ export default class LapGraphs {
 		this.max_speed_el = document.createElement('a-entity')
 		this.max_speed_el.setAttribute('position', '0.0 0.0 0.0')
 		this.max_speed_el.setAttribute('rotation', '90.0 0.0 0.0')
-		this.max_speed_el.setAttribute('flag_pole', {})
+		this.max_speed_el.setAttribute('flag_pole', { align: 'center' })
 		this.max_speed_el.setAttribute('look-at', '[camera]')
 
 		this.max_speed_text_el = document.createElement('a-entity')
